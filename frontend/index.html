@@ -270,20 +270,7 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
   .portal-sidebar{position:static;flex-direction:row;flex-wrap:wrap;gap:4px 20px}
   .portal-tab.active::before,.admin-tab.active::before{display:none}
 }
-@media(max-width:700px){
-  .navbar nav{display:none}
-  .hero{padding:140px 6% 90px}
-  .sports-grid{grid-template-columns:repeat(2,1fr)}
-  .program-grid{grid-template-columns:1fr}
-  .metrics{grid-template-columns:repeat(2,1fr)}
-  .metrics div:nth-child(3){border-left:0}
-  .metrics div{border-top:1px solid var(--line)}
-  .metrics div:nth-child(-n+2){border-top:0}
-  .section{padding:90px 6%}
-  .chat-window{width:calc(100vw - 52px)}
-  .stat-row,.admin-stats{grid-template-columns:1fr 1fr}
-  .stat-row.cols5{grid-template-columns:1fr 1fr}
-}
+.menu-btn{display:none;background:none;border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:20px;line-height:1;width:44px;height:44px;cursor:pointer;flex:none}@media(max-width:700px){  .menu-btn{display:inline-flex;align-items:center;justify-content:center}  .navbar{padding:0 16px;gap:10px}  .navbar .brand{font-size:14px}  .navbar nav{display:none;position:fixed;top:66px;left:0;right:0;z-index:29;flex-direction:column;align-items:stretch;gap:0;background:rgba(10,10,11,.97);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);padding:10px 20px 22px;max-height:calc(100dvh - 66px);overflow-y:auto}  body.menu-open .navbar nav{display:flex}  .navbar nav a{padding:15px 4px;font-size:16px;border-bottom:1px solid var(--line-soft)}  .navbar nav .portal-btn,.navbar nav .admin-nav-btn{width:100%;margin:12px 0 0;padding:14px;box-sizing:border-box}  #authContainer{gap:6px}  #authContainer .outline-btn,#authContainer .small-btn{padding:10px 14px;font-size:12.5px}  #logoutContainer .outline-btn{padding:10px 14px;font-size:12.5px}  body{overflow-x:hidden}  .hero{padding:130px 6% 80px}  .hero h1{font-size:clamp(42px,12.5vw,64px)}  .lede{font-size:15.5px}  .hero-actions{gap:14px}  .primary-btn{padding:15px 26px;font-size:14px}  .sports-grid{grid-template-columns:repeat(2,1fr)}  .sport{padding:26px 18px 22px}  .sport .icon{margin-bottom:30px}  .program-grid{grid-template-columns:1fr}  .program{padding:24px}  .metrics{grid-template-columns:repeat(2,1fr)}  .metrics div:nth-child(3){border-left:0}  .metrics div{border-top:1px solid var(--line);padding:26px 8px}  .metrics div:nth-child(-n+2){border-top:0}  .metrics b{font-size:26px}  .section{padding:80px 6%}  .filters{gap:10px}  .dropdown{min-width:0;width:100%}  .sat-wrap iframe{height:300px}  .explore-actions{flex-direction:column}  .explore-actions .primary-btn,.explore-actions .ghost-btn{width:100%}  .chat-window{width:calc(100vw - 52px);height:min(460px,70dvh)}  #ai-widget{bottom:16px;left:16px}  .chat-btn{height:50px;padding:0 20px}  .stat-row,.admin-stats{grid-template-columns:1fr 1fr}  .stat-row.cols5{grid-template-columns:1fr 1fr}  .portal-section{padding:110px 5% 80px}  .portal-head h2{font-size:32px}  .panel-card{padding:22px}  .table-row{min-width:560px}  .modal-box{padding:36px 26px}  .member-price{font-size:42px}  .plan{padding:32px 26px}  .plan strong{font-size:40px}  .profile-form .primary-btn{width:100%}}
 
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -294,8 +281,9 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
 <body>
 
 <header class="navbar">
-  <a class="brand" href="#"><span class="brand-mark">S</span> SportSphere</a>
-  <nav>
+  <a class="brand" href="https://dbse-project.vercel.app"><span class="brand-mark">S</span> SportSphere</a>
+  <button class="menu-btn" id="menuBtn" onclick="toggleMenu()" aria-label="menu">☰</button>
+  <nav id="mainNav">
     <a href="#home" onclick="closePortals()">Home</a>
     <a href="#sports" onclick="closePortals()">Sports</a>
     <a href="#programs" onclick="closePortals()">Programs</a>
@@ -852,7 +840,6 @@ async function onGoogle(resp) {
     updateNavState(currentUser.role);
     greetUser(currentUser.fullName);
     showToast('welcome, ' + currentUser.fullName.split(' ')[0]);
-    showPortal(currentUser.role === 'admin' ? 'admin' : 'user');
   } catch (e) { showToast(e.message); }
 }
 async function restoreSession() {
@@ -1519,7 +1506,9 @@ async function addGymProgram() {
 })();
 
 /* ---------- portals & tabs ---------- */
+function toggleMenu() { document.body.classList.toggle('menu-open'); }
 function showPortal(type) {
+  document.body.classList.remove('menu-open');
   document.querySelectorAll('.portal-section').forEach(x => x.classList.remove('active'));
   document.querySelector('main').style.display = 'none';
   document.querySelector('footer').style.display = 'none';
@@ -1539,6 +1528,7 @@ function showPortal(type) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function closePortals() {
+  document.body.classList.remove('menu-open');
   document.querySelectorAll('.portal-section').forEach(x => x.classList.remove('active'));
   document.querySelector('main').style.display = '';
   document.querySelector('footer').style.display = '';
