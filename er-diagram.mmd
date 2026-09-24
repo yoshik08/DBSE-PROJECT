@@ -1,0 +1,66 @@
+erDiagram
+    User {
+        ObjectId _id PK
+        string googleSub "unique, sparse"
+        string fullName
+        string email "unique"
+        string phone
+        string role "athlete | admin | gym"
+        date createdAt
+    }
+    Sport {
+        ObjectId _id PK
+        string name "unique"
+        string icon
+        string description
+    }
+    Program {
+        ObjectId _id PK
+        ObjectId sportId FK
+        string name
+        string location
+        string day
+        string startTime
+        string endTime
+        number capacity
+    }
+    Plan {
+        ObjectId _id PK
+        string name "unique"
+        number priceInr
+        string billingCycle "monthly | quarterly | yearly"
+        string description
+    }
+    Subscription {
+        ObjectId _id PK
+        ObjectId userId FK
+        ObjectId planId FK
+        ObjectId programId FK "optional"
+        string status "active | expired | cancelled"
+        date startDate
+        date endDate
+    }
+    Invoice {
+        ObjectId _id PK
+        ObjectId subscriptionId FK
+        number amountInr
+        string status "pending | paid | overdue"
+        date issuedAt
+        date dueDate
+    }
+    Payment {
+        ObjectId _id PK
+        ObjectId invoiceId FK
+        number amountInr
+        string method "upi | card | netbanking"
+        string txnRef "razorpay payment id"
+        string status "success | failed"
+        date paidAt
+    }
+
+    Sport ||--o{ Program : "has"
+    User ||--o{ Subscription : "subscribes"
+    Plan ||--o{ Subscription : "defines"
+    Program ||--o{ Subscription : "trains in"
+    Subscription ||--o{ Invoice : "billed as"
+    Invoice ||--o{ Payment : "paid by"
