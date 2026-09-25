@@ -270,13 +270,59 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
   .portal-sidebar{position:static;flex-direction:row;flex-wrap:wrap;gap:4px 20px}
   .portal-tab.active::before,.admin-tab.active::before{display:none}
 }
-.menu-btn{display:none;background:none;border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:20px;line-height:1;width:44px;height:44px;cursor:pointer;flex:none}@media(max-width:700px){  .menu-btn{display:inline-flex;align-items:center;justify-content:center}  .navbar{padding:0 16px;gap:10px}  .navbar .brand{font-size:14px}  .navbar nav{display:none;position:fixed;top:66px;left:0;right:0;z-index:29;flex-direction:column;align-items:stretch;gap:0;background:rgba(10,10,11,.97);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);padding:10px 20px 22px;max-height:calc(100dvh - 66px);overflow-y:auto}  body.menu-open .navbar nav{display:flex}  .navbar nav a{padding:15px 4px;font-size:16px;border-bottom:1px solid var(--line-soft)}  .navbar nav .portal-btn,.navbar nav .admin-nav-btn{width:100%;margin:12px 0 0;padding:14px;box-sizing:border-box}  #authContainer{gap:6px}  #authContainer .outline-btn,#authContainer .small-btn{padding:10px 14px;font-size:12.5px}  #logoutContainer .outline-btn{padding:10px 14px;font-size:12.5px}  body{overflow-x:hidden}  .hero{padding:130px 6% 80px}  .hero h1{font-size:clamp(42px,12.5vw,64px)}  .lede{font-size:15.5px}  .hero-actions{gap:14px}  .primary-btn{padding:15px 26px;font-size:14px}  .sports-grid{grid-template-columns:repeat(2,1fr)}  .sport{padding:26px 18px 22px}  .sport .icon{margin-bottom:30px}  .program-grid{grid-template-columns:1fr}  .program{padding:24px}  .metrics{grid-template-columns:repeat(2,1fr)}  .metrics div:nth-child(3){border-left:0}  .metrics div{border-top:1px solid var(--line);padding:26px 8px}  .metrics div:nth-child(-n+2){border-top:0}  .metrics b{font-size:26px}  .section{padding:80px 6%}  .filters{gap:10px}  .dropdown{min-width:0;width:100%}  .sat-wrap iframe{height:300px}  .explore-actions{flex-direction:column}  .explore-actions .primary-btn,.explore-actions .ghost-btn{width:100%}  .chat-window{width:calc(100vw - 52px);height:min(460px,70dvh)}  #ai-widget{bottom:16px;left:16px}  .chat-btn{height:50px;padding:0 20px}  .stat-row,.admin-stats{grid-template-columns:1fr 1fr}  .stat-row.cols5{grid-template-columns:1fr 1fr}  .portal-section{padding:110px 5% 80px}  .portal-head h2{font-size:32px}  .panel-card{padding:22px}  .table-row{min-width:560px}  .modal-box{padding:36px 26px}  .member-price{font-size:42px}  .plan{padding:32px 26px}  .plan strong{font-size:40px}  .profile-form .primary-btn{width:100%}}
+.menu-btn{display:none;background:none;border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:20px;line-height:1;width:44px;height:44px;cursor:pointer;flex:none}
+@media(max-width:700px){
+  .menu-btn{display:inline-flex;align-items:center;justify-content:center}
+  .navbar{padding:0 16px;gap:10px}
+  .navbar .brand{font-size:14px}
+  .navbar nav{display:none;position:fixed;top:66px;left:0;right:0;z-index:29;flex-direction:column;align-items:stretch;gap:0;background:rgba(10,10,11,.97);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);padding:10px 20px 22px;max-height:calc(100dvh - 66px);overflow-y:auto}
+  body.menu-open .navbar nav{display:flex}
+  .navbar nav a{padding:15px 4px;font-size:16px;border-bottom:1px solid var(--line-soft)}
+  .navbar nav .portal-btn,.navbar nav .admin-nav-btn{width:100%;margin:12px 0 0;padding:14px;box-sizing:border-box}
+  #authContainer{gap:6px}
+  #authContainer .outline-btn,#authContainer .small-btn{padding:10px 14px;font-size:12.5px}
+  #logoutContainer .outline-btn{padding:10px 14px;font-size:12.5px}
+  body{overflow-x:hidden}
+  .hero{padding:130px 6% 80px}
+  .hero h1{font-size:clamp(42px,12.5vw,64px)}
+  .lede{font-size:15.5px}
+  .hero-actions{gap:14px}
+  .primary-btn{padding:15px 26px;font-size:14px}
+  .sports-grid{grid-template-columns:repeat(2,1fr)}
+  .sport{padding:26px 18px 22px}
+  .sport .icon{margin-bottom:30px}
+  .program-grid{grid-template-columns:1fr}
+  .program{padding:24px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .metrics div:nth-child(3){border-left:0}
+  .metrics div{border-top:1px solid var(--line);padding:26px 8px}
+  .metrics div:nth-child(-n+2){border-top:0}
+  .metrics b{font-size:26px}
+  .section{padding:80px 6%}
+  .filters{gap:10px}
+  .dropdown{min-width:0;width:100%}
+  .sat-wrap iframe{height:300px}
+  .explore-actions{flex-direction:column}
+  .explore-actions .primary-btn,.explore-actions .ghost-btn{width:100%}
+  .chat-window{width:calc(100vw - 52px);height:min(460px,70dvh)}
+  #ai-widget{bottom:16px;left:16px}
+  .chat-btn{height:50px;padding:0 20px}
+  .stat-row,.admin-stats{grid-template-columns:1fr 1fr}
+  .stat-row.cols5{grid-template-columns:1fr 1fr}
+  .portal-section{padding:110px 5% 80px}
+  .portal-head h2{font-size:32px}
+  .panel-card{padding:22px}
+  .table-row{min-width:560px}
+  .modal-box{padding:36px 26px}
+  .member-price{font-size:42px}
+  .plan{padding:32px 26px}
+  .plan strong{font-size:40px}
+  .profile-form .primary-btn{width:100%}
+}
 
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
 </head>
 <body>
 
@@ -296,7 +342,7 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
     <button class="portal-btn" id="gymPortalBtn" style="display:none" onclick="showPortal('gym')">gym portal</button>
   </nav>
   <div id="authContainer" style="display:flex;gap:8px;align-items:center">
-    <button class="outline-btn" onclick="showPortal('admin')">Admin</button>
+    <button class="outline-btn" id="adminNavBtn" style="display:none" onclick="showPortal('admin')">Admin</button>
     <button class="small-btn" onclick="showRegister()">Register</button>
     <button class="outline-btn" onclick="showLogin()">Login</button>
   </div>
@@ -319,10 +365,10 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
 </section>
 
 <section class="metrics reveal">
-  <div><b id="mAthletes">0</b><span>Athletes</span></div>
-  <div><b id="mSports">0</b><span>Sports</span></div>
-  <div><b id="mPrograms">0</b><span>Programs</span></div>
-  <div><b id="mSubs">0</b><span>Active subscriptions</span></div>
+  <div><b>19</b><span>Athletes</span></div>
+  <div><b>10</b><span>Sports</span></div>
+  <div><b>20</b><span>Programs</span></div>
+  <div><b>10</b><span>Active subscriptions</span></div>
 </section>
 
 <section id="sports" class="section">
@@ -447,8 +493,8 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
       <p class="book-contact" id="coPlace"></p>
       <div class="pm-rows" id="coRows"></div>
       <div class="book-total"><span>Total due</span><b id="coTotal"></b></div>
-      <button class="primary-btn book-go" id="coPay" onclick="payNow()">Pay →</button>
-      <p class="co-note">secured by Razorpay · test mode</p>
+      <button class="primary-btn book-go" id="coPay" onclick="mockPay()">Pay →</button>
+      <p class="co-note">test checkout — razorpay plugs in here</p>
     </div>
     <div id="coDone" style="display:none;text-align:center;padding:16px 0">
       <div style="font-size:42px;margin-bottom:14px">✓</div>
@@ -564,10 +610,10 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
   </div>
 
   <div class="admin-stats">
-    <div class="portal-stat"><span>users</span><strong>20</strong><small>19 athletes + 1 admin</small></div>
-    <div class="portal-stat"><span>sports</span><strong>10</strong><small>17 programs</small></div>
-    <div class="portal-stat"><span>subscriptions</span><strong>20</strong><small>active memberships</small></div>
-    <div class="portal-stat"><span>invoices</span><strong>20</strong><small>14 payments recorded</small></div>
+    <div class="portal-stat"><span>users</span><strong>0</strong><small>—</small></div>
+    <div class="portal-stat"><span>sports</span><strong>0</strong><small>—</small></div>
+    <div class="portal-stat"><span>subscriptions</span><strong>0</strong><small>active memberships</small></div>
+    <div class="portal-stat"><span>invoices</span><strong>0</strong><small>—</small></div>
   </div>
 
   <div class="admin-layout">
@@ -585,52 +631,37 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
           <h3>system overview</h3>
           <p>Use the admin sections to manage the sports subscription platform.</p>
         </div>
+        <div class="panel-card">
+          <h3>two-factor login</h3>
+          <div id="mfaBox"><p>loading…</p></div>
+        </div>
       </div>
 
       <div id="admin-users" class="admin-panel">
         <div class="panel-card">
           <div class="table-title"><h3>users</h3><button class="small-btn" onclick="toast('add user form opened')">+ add user</button></div>
-          <div class="portal-table">
-            <div class="table-row table-header"><span>id</span><span>name</span><span>email</span><span>role</span></div>
-            <div class="table-row"><span>1</span><span>demo athlete</span><span>athlete@example.com</span><span class="badge">athlete</span></div>
-            <div class="table-row"><span>10</span><span>admin</span><span>admin@sportsphere.com</span><span class="badge admin">admin</span></div>
-            <div class="table-row"><span>11</span><span>athlete 11</span><span>athlete11@example.com</span><span class="badge">athlete</span></div>
-          </div>
+          <div class="portal-table"><div class="table-row"><span>loading users…</span></div></div>
         </div>
       </div>
 
       <div id="admin-programs" class="admin-panel">
         <div class="panel-card">
           <div class="table-title"><h3>programs & timings</h3><button class="small-btn" onclick="addProgram()">+ add program</button></div>
-          <div class="portal-table">
-            <div class="table-row table-header"><span>program</span><span>location</span><span>day</span><span>time</span></div>
-            <div class="table-row"><span>football training</span><span>hyderabad sports complex</span><span>monday</span><span>18:00–20:00</span></div>
-            <div class="table-row"><span>cricket academy</span><span>bangalore cricket ground</span><span>tuesday</span><span>17:00–19:30</span></div>
-            <div class="table-row"><span>boxing academy</span><span>pune boxing centre</span><span>wednesday</span><span>18:00–20:00</span></div>
-          </div>
+          <div class="portal-table"><div class="table-row"><span>loading programs…</span></div></div>
         </div>
       </div>
 
       <div id="admin-subscriptions" class="admin-panel">
         <div class="panel-card">
           <h3>subscriptions</h3>
-          <div class="portal-table">
-            <div class="table-row table-header"><span>subscription</span><span>user id</span><span>plan</span><span>status</span></div>
-            <div class="table-row"><span>#SUB-001</span><span>1</span><span>football training</span><span class="badge success">active</span></div>
-            <div class="table-row"><span>#SUB-002</span><span>2</span><span>cricket academy</span><span class="badge success">active</span></div>
-            <div class="table-row"><span>#SUB-003</span><span>3</span><span>basketball training</span><span class="badge pending">pending</span></div>
-          </div>
+          <div class="portal-table"><div class="table-row"><span>loading subscriptions…</span></div></div>
         </div>
       </div>
 
       <div id="admin-billing" class="admin-panel">
         <div class="panel-card">
           <div class="table-title"><h3>invoices & payments</h3><button class="small-btn" onclick="exportCSV()">export csv</button></div>
-          <div class="portal-table">
-            <div class="table-row table-header"><span>invoice</span><span>user id</span><span>amount</span><span>payment</span></div>
-            <div class="table-row"><span>#INV-1001</span><span>1</span><span>₹4,999</span><span class="badge success">paid</span></div>
-            <div class="table-row"><span>#INV-1002</span><span>2</span><span>₹2,499</span><span class="badge pending">pending</span></div>
-          </div>
+          <div class="portal-table"><div class="table-row"><span>loading invoices…</span></div></div>
         </div>
       </div>
     </main>
@@ -834,6 +865,7 @@ function initGoogleBtn() {
 async function onGoogle(resp) {
   try {
     const data = await api('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken: resp.credential }) });
+    if (data.mfaRequired) { hideLogin(); return verifyMfa(data.tempToken); }
     jwt = data.token; currentUser = data.user;
     localStorage.setItem('ss_jwt', jwt);
     hideLogin();
@@ -854,6 +886,7 @@ function updateNavState(role) {
   document.getElementById('authContainer').style.display = 'none';
   document.getElementById('logoutContainer').style.display = 'flex';
   document.getElementById('adminPortalBtn').style.display = role === 'admin' ? 'inline-block' : 'none';
+  document.getElementById('adminNavBtn').style.display = role === 'admin' ? 'inline-block' : 'none';
   document.getElementById('gymPortalBtn').style.display = role === 'gym' ? 'inline-block' : 'none';
   document.getElementById('userPortalBtn').style.display = role === 'athlete' ? 'inline-block' : 'none';
 }
@@ -864,6 +897,7 @@ function logout(silent) {
   document.getElementById('authContainer').style.display = 'flex';
   document.getElementById('logoutContainer').style.display = 'none';
   document.getElementById('adminPortalBtn').style.display = 'none';
+  document.getElementById('adminNavBtn').style.display = 'none';
   document.getElementById('gymPortalBtn').style.display = 'none';
   document.getElementById('userPortalBtn').style.display = 'none';
   closePortals();
@@ -905,16 +939,16 @@ function openMockPlanCheckout(invoice) {
   document.getElementById('coDone').style.display = 'none';
   document.getElementById('checkoutModal').classList.add('show');
 }
-function openRazorpay(order, invoiceId, meta) {
+function openRazorpay(order, invoiceId) {
   const rzp = new Razorpay({
     key: order.keyId,
     order_id: order.orderId,
     currency: 'INR',
     name: 'SportSphere',
-    description: ((meta && meta.kind === 'program') ? 'program booking' : 'subscription') + ' payment (test mode)',
+    description: 'subscription payment (test mode)',
     handler: async function (resp) {
       try {
-        const data = await api('/api/payments/verify', {
+        await api('/api/payments/verify', {
           method: 'POST',
           body: JSON.stringify({
             invoiceId,
@@ -923,27 +957,7 @@ function openRazorpay(order, invoiceId, meta) {
             signature: resp.razorpay_signature
           })
         });
-        if (meta && meta.kind === 'program') {
-          const booking = await api('/api/bookings', { method: 'POST',
-            body: JSON.stringify({ programId: meta.programId, slot: meta.slot }) });
-          document.querySelector('#coDone .eyebrow').textContent = 'BOOKING CONFIRMED';
-          document.getElementById('coDoneText').textContent =
-            meta.name + ' · ' + meta.venue + ' — booking ref ' + booking.bookingRef;
-          lastQr = { title: 'booking pass',
-            payload: 'SPORTSPHERE BOOKING\nProgram: ' + meta.name + '\nSlot: ' + meta.slot + '\nRef: ' + booking.bookingRef,
-            caption: meta.name + ' — booking ref ' + booking.bookingRef };
-        } else {
-          const subId = String(data.subscriptionId || '').slice(-8).toUpperCase();
-          document.querySelector('#coDone .eyebrow').textContent = 'MEMBERSHIP ACTIVE';
-          document.getElementById('coDoneText').textContent =
-            'All-Access — every venue, every program, 30 days. payment verified via Razorpay.';
-          lastQr = { title: 'membership pass',
-            payload: 'SPORTSPHERE SUBSCRIPTION\nPlan: All-Access\nID: ' + subId + '\nStatus: active\nValid: 30 days',
-            caption: 'All-Access · ' + subId };
-        }
-        document.getElementById('coMain').style.display = 'none';
-        document.getElementById('coDone').style.display = '';
-        document.getElementById('checkoutModal').classList.add('show');
+        showToast('payment successful, plan activated');
         refreshUserPortal();
       } catch (e) { showToast(e.message); }
     }
@@ -1035,11 +1049,6 @@ async function refreshAdmin() {
     const smalls = document.querySelectorAll('#adminPortal .portal-stat small');
     if (boxes[0]) boxes[0].textContent = stats.users;
     if (boxes[1]) boxes[1].textContent = sportsData.length;
-    if (smalls[0]) {
-      const athletes = users.filter(u => u.role === 'athlete').length;
-      const admins = users.filter(u => u.role === 'admin').length;
-      smalls[0].textContent = athletes + ' athletes + ' + admins + ' admin';
-    }
     if (smalls[1]) smalls[1].textContent = programsData.length + ' programs';
     if (boxes[2]) boxes[2].textContent = stats.subscriptions;
     if (boxes[3]) boxes[3].textContent = invoices.length;
@@ -1058,8 +1067,92 @@ async function refreshAdmin() {
         '</span><span>' + (s.planId ? s.planId.name : '-') + '</span><span>' + (s.programId ? s.programId.name : '-') + '</span>' + badge(s.status) + '</div>').join('');
 
     renderAdminInvoices(invoices);
+    renderAdminPrograms();
+    refreshMfaStatus();
   } catch (e) { console.warn('admin refresh failed', e.message); }
 }
+/* ---------- admin mfa (totp: google authenticator / duo / proton auth) ---------- */
+async function verifyMfa(tempToken) {
+  const code = prompt('enter the 6-digit code from your authenticator app:');
+  if (!code) return;
+  try {
+    const data = await api('/api/auth/mfa', { method: 'POST', body: JSON.stringify({ tempToken, code: code.trim() }) });
+    jwt = data.token;
+    currentUser = data.user;
+    localStorage.setItem('ss_jwt', jwt);
+    updateNavState(currentUser.role);
+    greetUser(currentUser.fullName);
+    showToast('welcome, ' + currentUser.fullName.split(' ')[0]);
+  } catch (e) { showToast(e.message || 'wrong code, try again'); }
+}
+async function refreshMfaStatus() {
+  const box = document.getElementById('mfaBox');
+  if (!box) return;
+  try {
+    const me = await api('/api/auth/me');
+    box.innerHTML = me.mfaEnabled
+      ? '<p>mfa is <b>on</b> for this admin account.</p><button class="small-btn" onclick="disableMfa()">disable mfa</button>'
+      : '<p>mfa is <b>off</b>. add a second step to admin login.</p><button class="small-btn" onclick="setupMfa()">set up authenticator</button>';
+  } catch (e) { box.innerHTML = '<p>could not load mfa status</p>'; }
+}
+async function setupMfa() {
+  const box = document.getElementById('mfaBox');
+  try {
+    const s = await api('/api/admin/mfa/setup', { method: 'POST' });
+    box.innerHTML = '<p>scan with your authenticator app, then enter the 6-digit code:</p>' +
+      '<img src="' + s.qrDataUrl + '" alt="mfa qr" style="width:180px;height:180px;background:#fff;padding:8px;border-radius:12px">' +
+      '<p style="margin-top:10px">or enter manually: <code>' + s.secret + '</code></p>' +
+      '<div style="display:flex;gap:8px;margin-top:10px"><input id="mfaCode" placeholder="123456" inputmode="numeric" autocomplete="one-time-code" style="width:140px">' +
+      '<button class="small-btn" onclick="enableMfa()">verify &amp; enable</button></div>';
+  } catch (e) { showToast(e.message); }
+}
+async function enableMfa() {
+  const code = document.getElementById('mfaCode').value.trim();
+  if (!code) return;
+  try {
+    await api('/api/admin/mfa/enable', { method: 'POST', body: JSON.stringify({ code }) });
+    showToast('mfa enabled'); refreshMfaStatus();
+  } catch (e) { showToast(e.message); }
+}
+async function disableMfa() {
+  const code = prompt('enter your current 6-digit code to turn mfa off:');
+  if (!code) return;
+  try {
+    await api('/api/admin/mfa/disable', { method: 'POST', body: JSON.stringify({ code: code.trim() }) });
+    showToast('mfa disabled'); refreshMfaStatus();
+  } catch (e) { showToast(e.message); }
+}
+
+/* ---------- admin programs (live from db) ---------- */
+function renderAdminPrograms() {
+  const el = document.querySelector('#admin-programs .portal-table');
+  const rows = (programsData || []).map(p =>
+    '<div class="table-row"><span>' + p.name + '</span><span>' + (p.location || '-') + '</span><span>' + (p.day || '-') + '</span><span>' +
+    ((p.startTime || '') + (p.endTime ? '\u2013' + p.endTime : '')) + '</span><span><button class="small-btn" onclick="editProgram(\'' + p._id + '\')">edit</button> ' +
+    '<button class="small-btn" onclick="delProgram(\'' + p._id + '\')">del</button></span></div>').join('');
+  el.innerHTML = '<div class="table-row table-header"><span>program</span><span>location</span><span>day</span><span>time</span><span>actions</span></div>' +
+    (rows || '<div class="table-row"><span>no programs yet</span></div>');
+}
+async function editProgram(id) {
+  const p = (programsData || []).find(x => String(x._id) === String(id));
+  if (!p) return;
+  const name = prompt('program name:', p.name);
+  if (name === null) return;
+  try {
+    await api('/api/admin/programs/' + id, { method: 'PUT', body: JSON.stringify({ name: name.trim() || p.name }) });
+    programsData = await api('/api/programs');
+    filterPrograms(); renderAdminPrograms(); showToast('program updated');
+  } catch (e) { showToast(e.message); }
+}
+async function delProgram(id) {
+  if (!confirm('delete this program?')) return;
+  try {
+    await api('/api/admin/programs/' + id, { method: 'DELETE' });
+    programsData = await api('/api/programs');
+    filterPrograms(); renderAdminPrograms(); showToast('program deleted');
+  } catch (e) { showToast(e.message); }
+}
+
 function renderAdminInvoices(invoices) {
   document.querySelector('#admin-billing .portal-table').innerHTML =
     '<div class="table-row table-header"><span>invoice</span><span>user</span><span>amount</span><span>status</span></div>' +
@@ -1069,6 +1162,7 @@ function renderAdminInvoices(invoices) {
       inr(i.amountInr) + '</span>' + badge(i.status) + '</div>').join('');
 }
 async function refreshAdminBilling() {
+  if (!currentUser || currentUser.role !== 'admin') return;
   try { renderAdminInvoices(await api('/api/admin/invoices')); }
   catch (e) { console.warn('billing refresh failed', e.message); }
 }
@@ -1220,32 +1314,6 @@ function showSubQr(i) {
     'SPORTSPHERE SUBSCRIPTION\nPlan: ' + planName + '\nID: ' + String(s._id).slice(-8).toUpperCase() + '\nStatus: ' + s.status + '\nValid: ' + daysLeft + ' days left',
     planName + ' · ' + daysLeft + ' days left');
 }
-async function payNow() {
-  if (coPlan) return mockPay(); // membership without razorpay keys -> mock path
-  if (!jwt) { showLogin(); showToast('login with google first'); return; }
-  const p = bookPrograms.find(x => String(x._id) === String(coProgId));
-  if (!p) { showToast('program not found'); return; }
-  const btn = document.getElementById('coPay');
-  const slot = (p.day || '') + ' ' + (p.startTime || '') + ' – ' + (p.endTime || '');
-  const label = 'Pay ' + inr(p.priceInr) + ' →';
-  btn.disabled = true; btn.textContent = 'processing…';
-  try {
-    const { invoice } = await api('/api/subscriptions', { method: 'POST', body: JSON.stringify({ programId: p._id }) });
-    let order;
-    try {
-      order = await api('/api/payments/order', { method: 'POST', body: JSON.stringify({ invoiceId: invoice._id }) });
-    } catch (e) {
-      btn.disabled = false; btn.innerHTML = label; // razorpay unavailable -> mock
-      return mockPay();
-    }
-    btn.disabled = false; btn.innerHTML = label;
-    openRazorpay(order, invoice._id, { kind: 'program', programId: p._id, slot, name: p.name, venue: venueNameOf(p) });
-  } catch (e) {
-    btn.disabled = false; btn.innerHTML = 'try again →';
-    showToast(e.message);
-  }
-}
-
 // ===== RAZORPAY INTEGRATION POINT =====
 // mockPay() is a stand-in until razorpay test keys are configured.
 // to go live, replace the setTimeout body below with:
@@ -1269,7 +1337,6 @@ function mockPay() {
         ref = booking.bookingRef;
       }
       const label = coPlan ? coPlan.name : (p ? p.name + ' · ' + venueNameOf(p) : 'program');
-      document.querySelector('#coDone .eyebrow').textContent = 'BOOKING CONFIRMED';
       document.getElementById('coDoneText').textContent =
         label + ' — booking ref ' + ref + ' (test mode)';
       const slot = p ? ((p.day || '') + ' ' + (p.startTime || '') + ' – ' + (p.endTime || '')) : '';
@@ -1508,6 +1575,8 @@ async function addGymProgram() {
 /* ---------- portals & tabs ---------- */
 function toggleMenu() { document.body.classList.toggle('menu-open'); }
 function showPortal(type) {
+  if (type === 'admin' && (!currentUser || currentUser.role !== 'admin')) { showLogin(); showToast('admin login required'); return; }
+  if (type !== 'admin' && !currentUser) { showLogin(); showToast('login with google first'); return; }
   document.body.classList.remove('menu-open');
   document.querySelectorAll('.portal-section').forEach(x => x.classList.remove('active'));
   document.querySelector('main').style.display = 'none';
@@ -1623,14 +1692,6 @@ function catalogFailed() {
 window.addEventListener('DOMContentLoaded', async () => {
   try { await loadCatalog(); }
   catch (e) { console.warn('api not reachable yet:', e.message); catalogFailed(); }
-  try {
-    const s = await api('/api/stats');
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? 0; };
-    set('mAthletes', s.athletes);
-    set('mSports', s.sports);
-    set('mPrograms', s.programs);
-    set('mSubs', s.activeSubscriptions);
-  } catch (e) { console.warn('stats not reachable:', e.message); }
   await restoreSession();
 });
 
