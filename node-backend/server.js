@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -24,6 +24,23 @@ app.use('/api/ai', require('./routes/ai'));
 app.use('/api/bookings', require('./routes/bookings'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+// GET /api/stats -> public homepage metrics, live atlas counts
+app.get('/api/stats', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    const Sport = require('./models/Sport');
+    const Program = require('./models/Program');
+    const Subscription = require('./models/Subscription');
+    const [athletes, sports, programs, activeSubscriptions] = await Promise.all([
+      User.countDocuments({ role: 'athlete' }),
+      Sport.countDocuments(),
+      Program.countDocuments(),
+      Subscription.countDocuments({ status: 'active' })
+    ]);
+    res.json({ athletes, sports, programs, activeSubscriptions });
+  } catch (e) { res.status(500).json({ error: 'stats failed' }); }
+});
 
 // a bad request must never crash the process (express 4 does not catch async throws)
 process.on('unhandledRejection', (err) => console.error('unhandled rejection:', err && err.message));
