@@ -173,6 +173,9 @@ button{font-family:var(--sans)}
 .modal-box .eyebrow{margin-bottom:6px}
 .modal-box h2{font-family:var(--disp);font-size:28px;font-weight:500;letter-spacing:-.02em;margin:14px 0 8px}
 .modal-box p{color:var(--faint);font-size:13px}
+.mfa-code-input{font-size:30px;letter-spacing:12px;text-align:center;width:230px;padding:12px 8px 12px 20px;margin:18px auto 4px;display:block;background:var(--bg);border:1px solid var(--line);border-radius:14px;color:var(--text);font-family:var(--mono,monospace)}
+.mfa-code-input:focus{outline:none;border-color:var(--lime)}
+.mfa-error{color:#ff6b6b;font-size:13px;min-height:18px;margin:8px 0 0}
 /* booking modal */
 .book-box{width:min(520px,94vw);text-align:left;padding:40px 36px}
 .book-box .eyebrow{text-align:left}
@@ -515,6 +518,20 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
     <h2 id="authTitle">Login</h2>
     <div id="googleBtn" style="display:flex;justify-content:center;margin:10px 0"></div>
     <p style="font-size:12px;opacity:.6;text-align:center">one click login with google, no passwords</p>
+  </div>
+</div>
+
+<div class="modal" id="mfaModal">
+  <div class="modal-box">
+    <div class="eyebrow">TWO FACTOR</div>
+    <h2>check your app</h2>
+    <p>enter the 6-digit code from your authenticator app</p>
+    <input id="mfaCodeInput" class="mfa-code-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')submitMfa()">
+    <p id="mfaError" class="mfa-error"></p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+      <button class="ghost-btn" onclick="cancelMfa()">cancel</button>
+      <button class="primary-btn" onclick="submitMfa()">verify</button>
+    </div>
   </div>
 </div>
 
@@ -1106,18 +1123,38 @@ async function refreshAdmin() {
   } catch (e) { console.warn('admin refresh failed', e.message); }
 }
 /* ---------- admin mfa (totp: google authenticator / duo / proton auth) ---------- */
-async function verifyMfa(tempToken) {
-  const code = prompt('enter the 6-digit code from your authenticator app:');
-  if (!code) return;
+/* ---------- mfa login modal (replaces the native prompt) ---------- */
+let mfaTempToken = null, mfaAttempts = 0;
+function verifyMfa(tempToken) {
+  mfaTempToken = tempToken; mfaAttempts = 0;
+  document.getElementById('mfaError').textContent = '';
+  document.getElementById('mfaCodeInput').value = '';
+  document.getElementById('mfaModal').classList.add('show');
+  setTimeout(() => document.getElementById('mfaCodeInput').focus(), 60);
+}
+function closeMfaModal() {
+  document.getElementById('mfaModal').classList.remove('show');
+}
+function cancelMfa() { closeMfaModal(); showToast('admin login cancelled'); }
+async function submitMfa() {
+  const input = document.getElementById('mfaCodeInput');
+  const err = document.getElementById('mfaError');
+  const code = input.value.trim();
+  if (!/^\d{6}$/.test(code)) { err.textContent = 'enter the 6-digit code'; input.focus(); return; }
   try {
-    const data = await api('/api/auth/mfa', { method: 'POST', body: JSON.stringify({ tempToken, code: code.trim() }) });
+    const data = await api('/api/auth/mfa', { method: 'POST', body: JSON.stringify({ tempToken: mfaTempToken, code }) });
+    closeMfaModal();
     jwt = data.token;
     currentUser = data.user;
     localStorage.setItem('ss_jwt', jwt);
     updateNavState(currentUser.role);
     greetUser(currentUser.fullName);
     showToast('welcome, ' + currentUser.fullName.split(' ')[0]);
-  } catch (e) { showToast(e.message || 'wrong code, try again'); }
+  } catch (e) {
+    mfaAttempts++;
+    if (mfaAttempts >= 3) { closeMfaModal(); showToast('too many wrong codes, login again'); }
+    else { err.textContent = 'wrong code, try again'; input.value = ''; input.focus(); }
+  }
 }
 async function refreshMfaStatus() {
   const box = document.getElementById('mfaBox');
