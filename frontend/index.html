@@ -342,7 +342,7 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
     <button class="portal-btn" id="gymPortalBtn" style="display:none" onclick="showPortal('gym')">gym portal</button>
   </nav>
   <div id="authContainer" style="display:flex;gap:8px;align-items:center">
-    <button class="outline-btn" id="adminNavBtn" style="display:none" onclick="showPortal('admin')">Admin</button>
+    <button class="outline-btn" id="adminNavBtn" onclick="showPortal('admin')">Admin</button>
     <button class="small-btn" onclick="showRegister()">Register</button>
     <button class="outline-btn" onclick="showLogin()">Login</button>
   </div>
@@ -442,11 +442,12 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
       <p class="member-note">or pick a focused plan below</p>
     </div>
   </div>
+  <div id="planGrid" style="margin-top:16px;display:grid;gap:14px"></div>
 </section>
 
 </main>
 
-<footer class="reveal"><span>© 2026 SportSphere</span><span>Sports Subscription Management</span></footer>
+<footer class="reveal"><span>© 2026 SportSphere</span><span id="ftContact">Sports Subscription Management</span></footer>
 
 <div class="modal" id="bookModal">
   <div class="modal-box book-box">
@@ -623,6 +624,7 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
       <button class="admin-tab" onclick="switchAdminTab('programs', this)">programs</button>
       <button class="admin-tab" onclick="switchAdminTab('subscriptions', this)">subscriptions</button>
       <button class="admin-tab" onclick="switchAdminTab('billing', this)">billing</button>
+      <button class="admin-tab" onclick="switchAdminTab('content', this)">site content</button>
     </aside>
 
     <main class="portal-content">
@@ -662,6 +664,28 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
         <div class="panel-card">
           <div class="table-title"><h3>invoices & payments</h3><button class="small-btn" onclick="exportCSV()">export csv</button></div>
           <div class="portal-table"><div class="table-row"><span>loading invoices…</span></div></div>
+        </div>
+      </div>
+
+      <div id="admin-content" class="admin-panel">
+        <div class="panel-card">
+          <div class="table-title"><h3>contact info</h3><button class="small-btn" onclick="saveSiteContent()">save</button></div>
+          <div style="display:grid;gap:10px;max-width:420px">
+            <label style="font-size:13px;color:var(--faint)">phone<br><input id="scPhone" placeholder="+91 ..." style="width:100%"></label>
+            <label style="font-size:13px;color:var(--faint)">email<br><input id="scEmail" placeholder="hello@..." style="width:100%"></label>
+            <label style="font-size:13px;color:var(--faint)">address<br><input id="scAddress" placeholder="street, area, city" style="width:100%"></label>
+          </div>
+          <p style="font-size:12px;color:var(--faint)">shows in the site footer.</p>
+        </div>
+        <div class="panel-card">
+          <div class="table-title"><h3>plans & prices</h3><button class="small-btn" onclick="addPlan()">+ add plan</button></div>
+          <div class="portal-table" id="adminPlansTable"><div class="table-row"><span>loading plans…</span></div></div>
+          <p style="font-size:12px;color:var(--faint)">new plans show up in the membership section on the site.</p>
+        </div>
+        <div class="panel-card">
+          <h3>venue map embeds</h3>
+          <p style="font-size:12px;color:var(--faint)">paste a google maps embed link per venue. empty = auto map.</p>
+          <div id="adminGymsEmbed"><div class="table-row"><span>loading venues…</span></div></div>
         </div>
       </div>
     </main>
@@ -775,6 +799,7 @@ async function loadCatalog() {
     api('/api/sports'), api('/api/programs'), api('/api/plans'), api('/api/gyms')
   ]);
   renderSports(); filterPrograms(); renderPlans(); buildFilter(); renderExplore();
+  loadSiteContent();
   const counts = document.querySelectorAll('.metrics div b');
   if (counts[1]) counts[1].textContent = sportsData.length;
   if (counts[2]) counts[2].textContent = programsData.length;
@@ -836,7 +861,17 @@ document.addEventListener('click', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { const dd = document.getElementById('sportDropdown'); if (dd) dd.classList.remove('open'); }
 });
-function renderPlans() { /* subscriptions section removed; membership tab is the single product */ }
+function renderPlans() {
+  const grid = document.getElementById('planGrid');
+  if (!grid) return;
+  grid.innerHTML = (plansData || []).map(p =>
+    '<div class="member-card"><div class="member-info"><h3>' + p.name + '</h3>' +
+    '<p class="sec-sub">' + (p.description || '') + '</p></div>' +
+    '<div class="member-buy"><p class="member-price">\u20b9' + Number(p.priceInr || 0).toLocaleString('en-IN') +
+    '<span>/' + (p.billingCycle || 'month') + '</span></p>' +
+    '<button class="primary-btn" onclick="choosePlan(\'' + p._id + '\')">choose plan \u2192</button></div></div>'
+  ).join('');
+}
 function goSubscribe() {
   const all = plansData.find(p => p.name === 'All-Access') || plansData[0];
   if (all) choosePlan(all._id);
@@ -886,7 +921,6 @@ function updateNavState(role) {
   document.getElementById('authContainer').style.display = 'none';
   document.getElementById('logoutContainer').style.display = 'flex';
   document.getElementById('adminPortalBtn').style.display = role === 'admin' ? 'inline-block' : 'none';
-  document.getElementById('adminNavBtn').style.display = role === 'admin' ? 'inline-block' : 'none';
   document.getElementById('gymPortalBtn').style.display = role === 'gym' ? 'inline-block' : 'none';
   document.getElementById('userPortalBtn').style.display = role === 'athlete' ? 'inline-block' : 'none';
 }
@@ -897,7 +931,6 @@ function logout(silent) {
   document.getElementById('authContainer').style.display = 'flex';
   document.getElementById('logoutContainer').style.display = 'none';
   document.getElementById('adminPortalBtn').style.display = 'none';
-  document.getElementById('adminNavBtn').style.display = 'none';
   document.getElementById('gymPortalBtn').style.display = 'none';
   document.getElementById('userPortalBtn').style.display = 'none';
   closePortals();
@@ -1069,6 +1102,7 @@ async function refreshAdmin() {
     renderAdminInvoices(invoices);
     renderAdminPrograms();
     refreshMfaStatus();
+    refreshSiteContent();
   } catch (e) { console.warn('admin refresh failed', e.message); }
 }
 /* ---------- admin mfa (totp: google authenticator / duo / proton auth) ---------- */
@@ -1150,6 +1184,74 @@ async function delProgram(id) {
     await api('/api/admin/programs/' + id, { method: 'DELETE' });
     programsData = await api('/api/programs');
     filterPrograms(); renderAdminPrograms(); showToast('program deleted');
+  } catch (e) { showToast(e.message); }
+}
+
+/* ---------- admin site cms: contact, plans, map embeds ---------- */
+async function loadSiteContent() {
+  try {
+    const sc = await api('/api/admin/site-content');
+    const c = [sc.contactPhone, sc.contactEmail, sc.contactAddress].filter(Boolean).join(' \u00b7 ');
+    if (c) document.getElementById('ftContact').textContent = c;
+  } catch (e) {}
+}
+async function refreshSiteContent() {
+  try {
+    const sc = await api('/api/admin/site-content');
+    document.getElementById('scPhone').value = sc.contactPhone || '';
+    document.getElementById('scEmail').value = sc.contactEmail || '';
+    document.getElementById('scAddress').value = sc.contactAddress || '';
+    renderAdminPlans();
+    renderGymEmbeds();
+  } catch (e) {}
+}
+async function saveSiteContent() {
+  try {
+    await api('/api/admin/site-content', { method: 'PUT', body: JSON.stringify({
+      contactPhone: document.getElementById('scPhone').value.trim(),
+      contactEmail: document.getElementById('scEmail').value.trim(),
+      contactAddress: document.getElementById('scAddress').value.trim()
+    })});
+    showToast('contact info saved'); loadSiteContent();
+  } catch (e) { showToast(e.message); }
+}
+function renderAdminPlans() {
+  const el = document.getElementById('adminPlansTable');
+  const rows = (plansData || []).map(p =>
+    '<div class="table-row"><span>' + p.name + '</span><span>\u20b9' + p.priceInr + '/' + (p.billingCycle || 'month') + '</span><span>' +
+    '<button class="small-btn" onclick="delPlan(\'' + p._id + '\')">del</button></span></div>').join('');
+  el.innerHTML = '<div class="table-row table-header"><span>plan</span><span>price</span><span>actions</span></div>' +
+    (rows || '<div class="table-row"><span>no plans yet</span></div>');
+}
+async function addPlan() {
+  const name = prompt('plan name:'); if (!name) return;
+  const price = prompt('price in \u20b9:'); if (!price || isNaN(Number(price))) return;
+  const description = prompt('short description (optional):') || '';
+  try {
+    await api('/api/admin/plans', { method: 'POST', body: JSON.stringify({ name: name.trim(), priceInr: Number(price), description: description.trim() }) });
+    plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan added');
+  } catch (e) { showToast(e.message); }
+}
+async function delPlan(id) {
+  if (!confirm('delete this plan?')) return;
+  try {
+    await api('/api/admin/plans/' + id, { method: 'DELETE' });
+    plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan deleted');
+  } catch (e) { showToast(e.message); }
+}
+function renderGymEmbeds() {
+  const el = document.getElementById('adminGymsEmbed');
+  el.innerHTML = (gymsData || []).map((g, i) =>
+    '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap"><span style="min-width:130px;font-size:13px">' + g.name + '</span>' +
+    '<input id="embed' + i + '" placeholder="google maps embed url" value="' + (g.mapEmbedUrl || '') + '" style="flex:1;min-width:200px">' +
+    '<button class="small-btn" onclick="saveGymEmbed(\'' + g._id + '\',' + i + ')">save</button></div>').join('') ||
+    '<p style="font-size:13px">no venues yet</p>';
+}
+async function saveGymEmbed(id, i) {
+  const mapEmbedUrl = document.getElementById('embed' + i).value.trim();
+  try {
+    await api('/api/admin/gyms/' + id, { method: 'PUT', body: JSON.stringify({ mapEmbedUrl }) });
+    gymsData = await api('/api/gyms'); renderGymEmbeds(); showToast('embed saved');
   } catch (e) { showToast(e.message); }
 }
 
@@ -1444,7 +1546,8 @@ function previewPlace(kind, id) {
   const contact = [phone, email].filter(Boolean).join(' · ');
   document.getElementById('exDetail').innerHTML = (contact ? '<p class="ex-contact">' + contact + '</p>' : '') + detail;
   const q = (lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad');
-  document.getElementById('exMap').src = 'https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed';
+  const customEmbed = (kind === 'gym' && gymById(id).mapEmbedUrl) ? gymById(id).mapEmbedUrl : '';
+  document.getElementById('exMap').src = customEmbed || ('https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed');
   document.getElementById('exDir').href = 'https://www.google.com/maps/dir/?api=1&destination=' + ((lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad'));
 }
 

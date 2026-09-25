@@ -68,9 +68,9 @@ router.post('/mfa', async (req, res) => {
     const user = await User.findById(payload.userId).select('+mfaSecret');
     if (!user || !user.mfaEnabled || !user.mfaSecret)
       return res.status(401).json({ error: 'mfa not set up' });
-    const { authenticator } = require('otplib');
-    if (!authenticator.check(String(code || '').trim(), user.mfaSecret))
-      return res.status(401).json({ error: 'wrong code' });
+    const { verifySync } = require('otplib');
+    const chk = verifySync({ secret: user.mfaSecret, token: String(code || '').trim() });
+    if (!chk.valid) return res.status(401).json({ error: 'wrong code' });
     const token = jwt.sign(
       { userId: user._id.toString(), role: user.role },
       process.env.JWT_SECRET,

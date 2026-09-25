@@ -6,8 +6,11 @@ const Subscription = require('../models/Subscription');
 const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
 const { auth, admin } = require('../middleware/auth');
-const { authenticator } = require('otplib');
+const { generateSecret, generateURI, verifySync } = require('otplib');
 const QRCode = require('qrcode');
+const SiteContent = require('../models/SiteContent');
+const Plan = require('../models/Plan');
+const Gym = require('../models/Gym');
 const router = express.Router();
 // GET /api/admin/export/transactions?token=<jwt> -> csv download
 // token comes as a query param so a plain <a href> / button click can trigger it
@@ -49,26 +52,31 @@ router.get('/export/transactions', async (req, res) => {
   res.setHeader('Content-Disposition', 'attachment; filename="sportsphere-transactions.csv"');
   res.send(rows.map(r => r.map(csvEsc).join(',')).join('\n'));
 });
+// GET /api/admin/site-content -> public site boilerplate (contact info)
+router.get('/site-content', async (req, res) => {
+  const sc = await SiteContent.findOne({ key: 'main' });
+  res.json(sc || {});
+});
 router.use(auth, admin); // everything below is admin-only (header-token auth)
 // ---- admin totp mfa (google authenticator / duo / proton auth) ----
 // POST /api/admin/mfa/setup -> { otpauthUrl, qrDataUrl, secret } (scan or type key, then enable)
 router.post('/mfa/setup', async (req, res) => {
   try {
-    const secret = authenticator.generateSecret();
+    const secret = generateSecret();
     const user = await User.findById(req.user.userId).select('+mfaSecret');
     user.mfaSecret = secret; // stays off until a code is verified
     await user.save();
-    const otpauthUrl = authenticator.keyuri(user.email, 'SportSphere', secret);
+    const otpauthUrl = generateURI({ issuer: 'SportSphere', label: user.email, secret });
     const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
     res.json({ otpauthUrl, qrDataUrl, secret });
-  } catch (e) { res.status(500).json({ error: 'mfa setup failed' }); }
+  } catch (e) { res.status(500).json({ error: 'mfa setup failed', detail: e.message }); }
 });
 // POST /api/admin/mfa/enable { code } -> turns mfa on after verifying one code
 router.post('/mfa/enable', async (req, res) => {
   const user = await User.findById(req.user.userId).select('+mfaSecret');
   if (!user || !user.mfaSecret) return res.status(400).json({ error: 'run setup first' });
-  if (!authenticator.check(String(req.body.code || '').trim(), user.mfaSecret))
-    return res.status(401).json({ error: 'wrong code' });
+  const ok1 = verifySync({ secret: user.mfaSecret, token: String(req.body.code || '').trim() });
+  if (!ok1.valid) return res.status(401).json({ error: 'wrong code' });
   user.mfaEnabled = true;
   await user.save();
   res.json({ ok: true });
@@ -77,8 +85,8 @@ router.post('/mfa/enable', async (req, res) => {
 router.post('/mfa/disable', async (req, res) => {
   const user = await User.findById(req.user.userId).select('+mfaSecret');
   if (!user || !user.mfaEnabled) return res.json({ ok: true });
-  if (!authenticator.check(String(req.body.code || '').trim(), user.mfaSecret))
-    return res.status(401).json({ error: 'wrong code' });
+  const ok2 = verifySync({ secret: user.mfaSecret, token: String(req.body.code || '').trim() });
+  if (!ok2.valid) return res.status(401).json({ error: 'wrong code' });
   user.mfaEnabled = false;
   user.mfaSecret = undefined;
   await user.save();
@@ -126,5 +134,29 @@ router.put('/programs/:id', async (req, res) => {
 router.delete('/programs/:id', async (req, res) => {
   await Program.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
+});
+// ---- site cms: plans/prices, contact info, venue map embeds ----
+// PUT /api/admin/site-content -> update contact info (admin)
+router.put('/site-content', async (req, res) => {
+  const { contactPhone, contactEmail, contactAddress } = req.body || {};
+  const sc = await SiteContent.findOneAndUpdate(
+    { key: 'main' },
+    { contactPhone, contactEmail, contactAddress, updatedAt: new Date() },
+    { new: true, upsert: true }
+  );
+  res.json(sc);
+});
+// POST /api/admin/plans -> add plan (admin)
+router.post('/plans', async (req, res) => {
+  res.json(await Plan.create(req.body));
+});
+// DELETE /api/admin/plans/:id (admin)
+router.delete('/plans/:id', async (req, res) => {
+  await Plan.findByIdAndDelete(req.params.id);
+  res.json({ ok: true });
+});
+// PUT /api/admin/gyms/:id -> update gym incl mapEmbedUrl (admin)
+router.put('/gyms/:id', async (req, res) => {
+  res.json(await Gym.findByIdAndUpdate(req.params.id, req.body, { new: true }));
 });
 module.exports = router;
