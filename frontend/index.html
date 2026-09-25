@@ -332,6 +332,7 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
 
@@ -352,8 +353,7 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
   </nav>
   <div id="authContainer" style="display:flex;gap:8px;align-items:center">
     <button class="outline-btn" id="adminNavBtn" onclick="showPortal('admin')">Admin</button>
-    <button class="small-btn" onclick="showRegister()">Register</button>
-    <button class="outline-btn" onclick="showLogin()">Login</button>
+    <button class="small-btn" onclick="showLogin()">Login</button>
   </div>
   <div id="logoutContainer" style="display:none;gap:8px;align-items:center">
     <button class="outline-btn" onclick="logout()">Logout</button>
@@ -739,7 +739,7 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
       <div class="msg bot">hey, need a hand? ask me about sports, venues, plans or billing and ill point you to the right place.</div>
     </div>
     <div class="chat-input-area">
-      <input type="text" id="aiInput" placeholder="Ask about programs..." onkeypress="if(event.key==='Enter') sendAiMessage()">
+      <input type="text" id="aiInput" placeholder="Ask about programs..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeypress="if(event.key==='Enter') sendAiMessage()">
       <button onclick="sendAiMessage()">→</button>
     </div>
   </div>
@@ -824,7 +824,7 @@ async function api(path, opts = {}) {
   });
   let data = {};
   try { data = await res.json(); } catch (e) {}
-  if (!res.ok) throw new Error(data.error || 'request failed');
+  if (!res.ok) { const err = new Error(data.error || 'request failed'); err.status = res.status; throw err; }
   return data;
 }
 const sportIdOf = p => (p.sportId && p.sportId._id) ? p.sportId._id : p.sportId;
@@ -919,7 +919,6 @@ function showLogin() {
   document.getElementById('loginModal').classList.add('show');
   initGoogleBtn();
 }
-function showRegister() { showLogin(); }
 function hideLogin() { document.getElementById('loginModal').classList.remove('show'); }
 let googleInit = false;
 function initGoogleBtn() {
@@ -951,7 +950,7 @@ async function restoreSession() {
     currentUser = await api('/api/auth/me');
     updateNavState(currentUser.role);
     greetUser(currentUser.fullName);
-  } catch (e) { logout(true); }
+  } catch (e) { if (e.status === 401 || e.status === 403) logout(true); }
 }
 function updateNavState(role) {
   document.getElementById('authContainer').style.display = 'none';
@@ -985,6 +984,7 @@ async function choosePlan(planId) {
       const order = await api('/api/payments/order', { method: 'POST', body: JSON.stringify({ invoiceId: invoice._id }) });
       openRazorpay(order, invoice._id);
     } catch (e) {
+      showToast('razorpay keys missing on server, test checkout');
       openMockPlanCheckout(invoice); // razorpay keys missing -> same mock popup as program bookings
     }
   } catch (e) { showToast(e.message); }
@@ -1345,7 +1345,7 @@ async function addPlan() {
       { key: 'name', label: 'plan name', required: true, placeholder: 'e.g. Weekend Warrior' },
       { key: 'priceInr', label: 'price (\u20b9)', required: true, type: 'number', inputmode: 'numeric', placeholder: 'e.g. 1500' },
       { key: 'billingCycle', label: 'billing cycle', type: 'select',
-        options: [{ value: 'month', label: 'monthly' }, { value: 'quarter', label: 'quarterly' }, { value: 'year', label: 'yearly' }] },
+        options: [{ value: 'monthly', label: 'monthly' }, { value: 'quarterly', label: 'quarterly' }, { value: 'yearly', label: 'yearly' }] },
       { key: 'description', label: 'short description', type: 'textarea', placeholder: 'what is included' }
     ] });
   if (!v) return;
@@ -1363,7 +1363,7 @@ async function editPlan(id) {
       { key: 'name', label: 'plan name', required: true, value: p.name },
       { key: 'priceInr', label: 'price (\u20b9)', required: true, type: 'number', inputmode: 'numeric', value: p.priceInr },
       { key: 'billingCycle', label: 'billing cycle', type: 'select', value: p.billingCycle || 'month',
-        options: [{ value: 'month', label: 'monthly' }, { value: 'quarter', label: 'quarterly' }, { value: 'year', label: 'yearly' }] },
+        options: [{ value: 'monthly', label: 'monthly' }, { value: 'quarterly', label: 'quarterly' }, { value: 'yearly', label: 'yearly' }] },
       { key: 'description', label: 'short description', type: 'textarea', value: p.description }
     ] });
   if (!v) return;
@@ -1460,10 +1460,14 @@ async function addVenue() {
       { key: 'address', label: 'full address', placeholder: 'street, area, city' },
       { key: 'phone', label: 'contact phone', placeholder: '+91 ...' },
       { key: 'email', label: 'contact email', placeholder: 'hello@...' },
-      { key: 'mapEmbedUrl', label: 'google maps embed link', placeholder: 'empty = auto map' }
+      { key: 'lat', label: 'latitude', inputmode: 'decimal', placeholder: 'e.g. 17.4231' },
+      { key: 'lng', label: 'longitude', inputmode: 'decimal', placeholder: 'e.g. 78.4342' },
+      { key: 'mapEmbedUrl', label: 'google maps embed link', placeholder: 'empty = auto map from lat/lng' }
     ] });
   if (!v) return;
   delete v._sport;
+  if (v.lat === '') delete v.lat; else v.lat = Number(v.lat);
+  if (v.lng === '') delete v.lng; else v.lng = Number(v.lng);
   try {
     await api('/api/admin/gyms', { method: 'POST', body: JSON.stringify(v) });
     gymsData = await api('/api/gyms'); loadCatalog();

@@ -166,7 +166,8 @@ router.put('/site-content', async (req, res) => {
 
 // POST /api/admin/plans -> add plan (admin)
 router.post('/plans', async (req, res) => {
-  res.json(await Plan.create(req.body));
+  try { res.json(await Plan.create(req.body)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // DELETE /api/admin/plans/:id (admin)
@@ -177,7 +178,8 @@ router.delete('/plans/:id', async (req, res) => {
 
 // PUT /api/admin/plans/:id -> edit plan (admin)
 router.put('/plans/:id', async (req, res) => {
-  res.json(await Plan.findByIdAndUpdate(req.params.id, req.body, { new: true }));
+  try { res.json(await Plan.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })); }
+  catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // POST /api/admin/gyms -> create venue (admin)
