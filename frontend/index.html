@@ -717,27 +717,15 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
 
       <div id="admin-content" class="admin-panel">
         <div class="panel-card">
-          <div class="table-title"><h3>contact info</h3><button class="small-btn" onclick="saveSiteContent()">save</button></div>
-          <div style="display:grid;gap:12px;max-width:420px">
-            <div class="form-field"><label>phone</label><input id="scPhone" class="dark-input" placeholder="+91 ..."></div>
-            <div class="form-field"><label>email</label><input id="scEmail" class="dark-input" placeholder="hello@..."></div>
-            <div class="form-field"><label>address</label><input id="scAddress" class="dark-input" placeholder="street, area, city"></div>
-          </div>
-          <p style="font-size:12px;color:var(--faint)">shows in the site footer.</p>
-        </div>
-        <div class="panel-card">
-          <div class="table-title"><h3>plans & prices</h3><button class="small-btn" onclick="addPlan()">+ add plan</button></div>
+          <div class="table-title"><h3>subscription plans</h3><button class="small-btn" onclick="addPlan()">+ add plan</button></div>
           <div class="portal-table" id="adminPlansTable"><div class="table-row"><span>loading plans…</span></div></div>
-          <p style="font-size:12px;color:var(--faint)">new plans show up in the membership section on the site.</p>
+          <p style="font-size:12px;color:var(--faint)">plans show up in the membership section on the site.</p>
         </div>
         <div class="panel-card">
-          <h3>venue map embeds</h3>
-          <p style="font-size:12px;color:var(--faint)">paste a google maps embed link per venue. empty = auto map.</p>
-          <div id="adminGymsEmbed"><div class="table-row"><span>loading venues…</span></div></div>
+          <div class="table-title"><h3 id="sportsVenuesTitle">sports & venues</h3><button class="small-btn" id="backToSportsBtn" style="display:none" onclick="renderSportsVenues()">← all sports</button></div>
+          <div id="sportsVenuesBody"><div class="table-row"><span>loading…</span></div></div>
         </div>
       </div>
-    </main>
-  </div>
 </section>
 
 <!-- AI Assistant Widget -->
@@ -1338,28 +1326,15 @@ async function loadSiteContent() {
 }
 async function refreshSiteContent() {
   try {
-    const sc = await api('/api/admin/site-content');
-    document.getElementById('scPhone').value = sc.contactPhone || '';
-    document.getElementById('scEmail').value = sc.contactEmail || '';
-    document.getElementById('scAddress').value = sc.contactAddress || '';
     renderAdminPlans();
-    renderGymEmbeds();
+    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
   } catch (e) {}
-}
-async function saveSiteContent() {
-  try {
-    await api('/api/admin/site-content', { method: 'PUT', body: JSON.stringify({
-      contactPhone: document.getElementById('scPhone').value.trim(),
-      contactEmail: document.getElementById('scEmail').value.trim(),
-      contactAddress: document.getElementById('scAddress').value.trim()
-    })});
-    showToast('contact info saved'); loadSiteContent();
-  } catch (e) { showToast(e.message); }
 }
 function renderAdminPlans() {
   const el = document.getElementById('adminPlansTable');
   const rows = (plansData || []).map(p =>
     '<div class="table-row"><span>' + p.name + '</span><span>\u20b9' + p.priceInr + '/' + (p.billingCycle || 'month') + '</span><span>' +
+    '<button class="small-btn" onclick="editPlan(\'' + p._id + '\')">edit</button> ' +
     '<button class="small-btn" onclick="delPlan(\'' + p._id + '\')">del</button></span></div>').join('');
   el.innerHTML = '<div class="table-row table-header"><span>plan</span><span>price</span><span>actions</span></div>' +
     (rows || '<div class="table-row"><span>no plans yet</span></div>');
@@ -1380,6 +1355,122 @@ async function addPlan() {
     plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan added');
   } catch (e) { showToast(e.message); }
 }
+async function editPlan(id) {
+  const p = (plansData || []).find(x => String(x._id) === String(id));
+  if (!p) return;
+  const v = await openFormModal({ eyebrow: 'PLANS', title: 'edit plan', submitText: 'save',
+    fields: [
+      { key: 'name', label: 'plan name', required: true, value: p.name },
+      { key: 'priceInr', label: 'price (\u20b9)', required: true, type: 'number', inputmode: 'numeric', value: p.priceInr },
+      { key: 'billingCycle', label: 'billing cycle', type: 'select', value: p.billingCycle || 'month',
+        options: [{ value: 'month', label: 'monthly' }, { value: 'quarter', label: 'quarterly' }, { value: 'year', label: 'yearly' }] },
+      { key: 'description', label: 'short description', type: 'textarea', value: p.description }
+    ] });
+  if (!v) return;
+  try {
+    await api('/api/admin/plans/' + id, { method: 'PUT', body: JSON.stringify({ name: v.name, priceInr: Number(v.priceInr), billingCycle: v.billingCycle, description: v.description }) });
+    plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan updated');
+  } catch (e) { showToast(e.message); }
+}
+
+/* ---------- site content: sports -> venues, full venue edit ---------- */
+let activeSportId = null;
+function sportIdStr(p) {
+  const s = p.sportId;
+  if (!s) return null;
+  return String(typeof s === 'object' ? s._id : s);
+}
+function progGymIdStr(p) {
+  const g = p.gymId;
+  if (!g) return null;
+  return String(typeof g === 'object' ? g._id : g);
+}
+function renderSportsVenues() {
+  activeSportId = null;
+  document.getElementById('backToSportsBtn').style.display = 'none';
+  document.getElementById('sportsVenuesTitle').textContent = 'sports & venues';
+  const rows = (sportsData || []).map(s => {
+    const sid = String(s._id);
+    const progs = (programsData || []).filter(p => sportIdStr(p) === sid);
+    const venueIds = [...new Set(progs.map(progGymIdStr).filter(Boolean))];
+    return '<div class="table-row"><span>' + s.name + '</span><span>' + venueIds.length + ' venues</span><span>' + progs.length + ' programs</span>' +
+      '<span><button class="small-btn" onclick="openSport(\'' + s._id + '\')">venues \u2192</button></span></div>';
+  }).join('');
+  document.getElementById('sportsVenuesBody').innerHTML =
+    '<div class="portal-table"><div class="table-row table-header"><span>sport</span><span>venues</span><span>programs</span><span></span></div>' +
+    (rows || '<div class="table-row"><span>no sports yet</span></div>') + '</div>';
+}
+function openSport(sportId) {
+  activeSportId = String(sportId);
+  const sport = (sportsData || []).find(s => String(s._id) === activeSportId);
+  document.getElementById('sportsVenuesTitle').textContent = sport ? sport.name + ' venues' : 'venues';
+  document.getElementById('backToSportsBtn').style.display = '';
+  const progs = (programsData || []).filter(p => sportIdStr(p) === activeSportId);
+  const venueIds = [...new Set(progs.map(progGymIdStr).filter(Boolean))];
+  const cards = venueIds.map(vid => {
+    const g = (gymsData || []).find(x => String(x._id) === vid);
+    if (!g) return '';
+    const gprogs = progs.filter(p => progGymIdStr(p) === vid);
+    const progList = gprogs.map(p => p.name + (p.priceInr ? ' \u00b7 \u20b9' + Number(p.priceInr).toLocaleString('en-IN') : '')).join('<br>');
+    const mapTag = g.mapEmbedUrl
+      ? '<span style="font-size:11px;color:var(--lime)">custom map</span>'
+      : '<span style="font-size:11px;color:var(--faint)">auto map</span>';
+    return '<div class="panel-card" style="margin-bottom:10px">' +
+      '<div class="table-title"><h3 style="font-size:15px">' + g.name + '</h3><button class="small-btn" onclick="editVenue(\'' + g._id + '\')">edit</button></div>' +
+      '<p style="font-size:13px;color:var(--faint)">' + [g.area, g.phone].filter(Boolean).join(' \u00b7 ') + ' ' + mapTag + '</p>' +
+      (progList ? '<p style="font-size:13px;margin-top:6px;line-height:1.7">' + progList + '</p>' : '') +
+      '</div>';
+  }).join('');
+  document.getElementById('sportsVenuesBody').innerHTML =
+    (cards || '<p style="font-size:13px;color:var(--faint)">no venues for this sport yet.</p>') +
+    '<button class="small-btn" onclick="addVenue()">+ add venue</button>';
+}
+async function editVenue(id) {
+  const g = (gymsData || []).find(x => String(x._id) === String(id));
+  if (!g) return;
+  const v = await openFormModal({ eyebrow: 'VENUES', title: 'edit venue', submitText: 'save',
+    fields: [
+      { key: 'name', label: 'venue name', required: true, value: g.name },
+      { key: 'area', label: 'area', value: g.area },
+      { key: 'address', label: 'full address', value: g.address },
+      { key: 'phone', label: 'phone', value: g.phone },
+      { key: 'email', label: 'email', value: g.email },
+      { key: 'lat', label: 'latitude', inputmode: 'decimal', value: g.lat },
+      { key: 'lng', label: 'longitude', inputmode: 'decimal', value: g.lng },
+      { key: 'mapEmbedUrl', label: 'google maps embed link', value: g.mapEmbedUrl, placeholder: 'empty = auto map' }
+    ] });
+  if (!v) return;
+  const body = Object.assign({}, v);
+  if (body.lat === '') delete body.lat; else body.lat = Number(body.lat);
+  if (body.lng === '') delete body.lng; else body.lng = Number(body.lng);
+  try {
+    await api('/api/admin/gyms/' + id, { method: 'PUT', body: JSON.stringify(body) });
+    gymsData = await api('/api/gyms'); loadCatalog();
+    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
+    showToast('venue updated');
+  } catch (e) { showToast(e.message); }
+}
+async function addVenue() {
+  const sports = (sportsData || []).map(s => ({ value: String(s._id), label: s.name }));
+  const v = await openFormModal({ eyebrow: 'VENUES', title: 'new venue', submitText: 'add venue',
+    fields: [
+      ...(sports.length > 1 ? [{ key: '_sport', label: 'sport', type: 'select', options: sports, value: activeSportId || sports[0].value }] : []),
+      { key: 'name', label: 'venue name', required: true, placeholder: 'e.g. Skykings Arena' },
+      { key: 'area', label: 'place / area', placeholder: 'e.g. Kondapur' },
+      { key: 'address', label: 'full address', placeholder: 'street, area, city' },
+      { key: 'phone', label: 'contact phone', placeholder: '+91 ...' },
+      { key: 'email', label: 'contact email', placeholder: 'hello@...' },
+      { key: 'mapEmbedUrl', label: 'google maps embed link', placeholder: 'empty = auto map' }
+    ] });
+  if (!v) return;
+  delete v._sport;
+  try {
+    await api('/api/admin/gyms', { method: 'POST', body: JSON.stringify(v) });
+    gymsData = await api('/api/gyms'); loadCatalog();
+    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
+    showToast('venue added. add programs for it in the programs tab.');
+  } catch (e) { showToast(e.message); }
+}
 async function delPlan(id) {
   if (!await askConfirm('delete plan?', 'the plan will disappear from the membership section. this cannot be undone.')) return;
   try {
@@ -1387,22 +1478,6 @@ async function delPlan(id) {
     plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan deleted');
   } catch (e) { showToast(e.message); }
 }
-function renderGymEmbeds() {
-  const el = document.getElementById('adminGymsEmbed');
-  el.innerHTML = (gymsData || []).map((g, i) =>
-    '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap"><span style="min-width:130px;font-size:13px">' + g.name + '</span>' +
-    '<input id="embed' + i + '" class="dark-input" style="flex:1;min-width:200px" placeholder="google maps embed url" value="' + (g.mapEmbedUrl || '') + '">' +
-    '<button class="small-btn" onclick="saveGymEmbed(\'' + g._id + '\',' + i + ')">save</button></div>').join('') ||
-    '<p style="font-size:13px">no venues yet</p>';
-}
-async function saveGymEmbed(id, i) {
-  const mapEmbedUrl = document.getElementById('embed' + i).value.trim();
-  try {
-    await api('/api/admin/gyms/' + id, { method: 'PUT', body: JSON.stringify({ mapEmbedUrl }) });
-    gymsData = await api('/api/gyms'); renderGymEmbeds(); showToast('embed saved');
-  } catch (e) { showToast(e.message); }
-}
-
 function renderAdminInvoices(invoices) {
   document.querySelector('#admin-billing .portal-table').innerHTML =
     '<div class="table-row table-header"><span>invoice</span><span>user</span><span>amount</span><span>status</span></div>' +

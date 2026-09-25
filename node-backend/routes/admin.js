@@ -11,7 +11,9 @@ const QRCode = require('qrcode');
 const SiteContent = require('../models/SiteContent');
 const Plan = require('../models/Plan');
 const Gym = require('../models/Gym');
+
 const router = express.Router();
+
 // GET /api/admin/export/transactions?token=<jwt> -> csv download
 // token comes as a query param so a plain <a href> / button click can trigger it
 function csvEsc(v) {
@@ -25,6 +27,7 @@ router.get('/export/transactions', async (req, res) => {
   } catch {
     return res.status(401).json({ error: 'bad token' });
   }
+
   const payments = await Payment.find()
     .populate({
       path: 'invoiceId',
@@ -34,6 +37,7 @@ router.get('/export/transactions', async (req, res) => {
       }
     })
     .sort({ paidAt: -1 });
+
   const rows = [['date', 'payment_id', 'athlete', 'email', 'invoice_id', 'plan', 'amount_inr', 'method', 'txn_ref', 'status']];
   for (const p of payments) {
     const inv = p.invoiceId || {};
@@ -52,12 +56,15 @@ router.get('/export/transactions', async (req, res) => {
   res.setHeader('Content-Disposition', 'attachment; filename="sportsphere-transactions.csv"');
   res.send(rows.map(r => r.map(csvEsc).join(',')).join('\n'));
 });
+
 // GET /api/admin/site-content -> public site boilerplate (contact info)
 router.get('/site-content', async (req, res) => {
   const sc = await SiteContent.findOne({ key: 'main' });
   res.json(sc || {});
 });
+
 router.use(auth, admin); // everything below is admin-only (header-token auth)
+
 // ---- admin totp mfa (google authenticator / duo / proton auth) ----
 // POST /api/admin/mfa/setup -> { otpauthUrl, qrDataUrl, secret } (scan or type key, then enable)
 router.post('/mfa/setup', async (req, res) => {
@@ -71,6 +78,7 @@ router.post('/mfa/setup', async (req, res) => {
     res.json({ otpauthUrl, qrDataUrl, secret });
   } catch (e) { res.status(500).json({ error: 'mfa setup failed', detail: e.message }); }
 });
+
 // POST /api/admin/mfa/enable { code } -> turns mfa on after verifying one code
 router.post('/mfa/enable', async (req, res) => {
   const user = await User.findById(req.user.userId).select('+mfaSecret');
@@ -81,6 +89,7 @@ router.post('/mfa/enable', async (req, res) => {
   await user.save();
   res.json({ ok: true });
 });
+
 // POST /api/admin/mfa/disable { code } -> turns mfa off after verifying one code
 router.post('/mfa/disable', async (req, res) => {
   const user = await User.findById(req.user.userId).select('+mfaSecret');
@@ -92,6 +101,7 @@ router.post('/mfa/disable', async (req, res) => {
   await user.save();
   res.json({ ok: true });
 });
+
 // GET /api/admin/stats -> dashboard numbers
 router.get('/stats', async (req, res) => {
   const [users, subscriptions, invoices, payments] = await Promise.all([
@@ -106,10 +116,12 @@ router.get('/stats', async (req, res) => {
     revenueInr: payments[0]?.total || 0
   });
 });
+
 // GET /api/admin/users
 router.get('/users', async (req, res) => {
   res.json(await User.find().select('-passwordHash').sort({ createdAt: -1 }));
 });
+
 // GET /api/admin/subscriptions
 router.get('/subscriptions', async (req, res) => {
   res.json(await Subscription.find()
@@ -118,23 +130,28 @@ router.get('/subscriptions', async (req, res) => {
     .populate('programId', 'name')
     .sort({ createdAt: -1 }));
 });
+
 // GET /api/admin/invoices
 router.get('/invoices', async (req, res) => {
   res.json(await Invoice.find().sort({ issuedAt: -1 }));
 });
+
 // POST /api/admin/programs -> add program
 router.post('/programs', async (req, res) => {
   res.json(await Program.create(req.body));
 });
+
 // PUT /api/admin/programs/:id -> edit program
 router.put('/programs/:id', async (req, res) => {
   res.json(await Program.findByIdAndUpdate(req.params.id, req.body, { new: true }));
 });
+
 // DELETE /api/admin/programs/:id
 router.delete('/programs/:id', async (req, res) => {
   await Program.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
 });
+
 // ---- site cms: plans/prices, contact info, venue map embeds ----
 // PUT /api/admin/site-content -> update contact info (admin)
 router.put('/site-content', async (req, res) => {
@@ -146,17 +163,31 @@ router.put('/site-content', async (req, res) => {
   );
   res.json(sc);
 });
+
 // POST /api/admin/plans -> add plan (admin)
 router.post('/plans', async (req, res) => {
   res.json(await Plan.create(req.body));
 });
+
 // DELETE /api/admin/plans/:id (admin)
 router.delete('/plans/:id', async (req, res) => {
   await Plan.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
 });
+
+// PUT /api/admin/plans/:id -> edit plan (admin)
+router.put('/plans/:id', async (req, res) => {
+  res.json(await Plan.findByIdAndUpdate(req.params.id, req.body, { new: true }));
+});
+
+// POST /api/admin/gyms -> create venue (admin)
+router.post('/gyms', async (req, res) => {
+  res.json(await Gym.create(req.body));
+});
+
 // PUT /api/admin/gyms/:id -> update gym incl mapEmbedUrl (admin)
 router.put('/gyms/:id', async (req, res) => {
   res.json(await Gym.findByIdAndUpdate(req.params.id, req.body, { new: true }));
 });
+
 module.exports = router;
