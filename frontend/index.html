@@ -836,9 +836,14 @@ async function loadCatalog() {
   ]);
   renderSports(); filterPrograms(); renderPlans(); buildFilter(); renderExplore();
   loadSiteContent();
-  const counts = document.querySelectorAll('.metrics div b');
-  if (counts[1]) counts[1].textContent = sportsData.length;
-  if (counts[2]) counts[2].textContent = programsData.length;
+  try {
+    const s = await api('/api/stats');
+    const counts = document.querySelectorAll('.metrics div b');
+    if (counts[0]) counts[0].textContent = s.athletes;
+    if (counts[1]) counts[1].textContent = s.sports;
+    if (counts[2]) counts[2].textContent = s.programs;
+    if (counts[3]) counts[3].textContent = s.activeSubscriptions;
+  } catch (e) { /* backend asleep: keep last numbers */ }
 }
 function renderSports() {
   document.getElementById('sportGrid').innerHTML = sportsData.map((s, i) => {
@@ -1001,12 +1006,13 @@ function openMockPlanCheckout(invoice) {
   document.getElementById('coTotal').textContent = inr(invoice.amountInr) + '/month';
   const payBtn = document.getElementById('coPay');
   payBtn.innerHTML = 'Pay ' + inr(invoice.amountInr) + ' →';
+  payBtn.setAttribute('onclick', 'mockPay()');
   payBtn.disabled = false;
   document.getElementById('coMain').style.display = '';
   document.getElementById('coDone').style.display = 'none';
   document.getElementById('checkoutModal').classList.add('show');
 }
-function openRazorpay(order, invoiceId) {
+function openRazorpay(order, invoiceId, onSuccess) {
   const rzp = new Razorpay({
     key: order.keyId,
     order_id: order.orderId,
@@ -1024,8 +1030,8 @@ function openRazorpay(order, invoiceId) {
             signature: resp.razorpay_signature
           })
         });
-        showToast('payment successful, plan activated');
-        refreshUserPortal();
+        if (onSuccess) onSuccess();
+        else { showToast('payment successful, plan activated'); refreshUserPortal(); }
       } catch (e) { showToast(e.message); }
     }
   });
@@ -1590,6 +1596,38 @@ function updateBookTotal() {
   document.getElementById('bkGo').disabled = !p;
 }
 function closeBook() { document.getElementById('bookModal').classList.remove('show'); }
+async function payForProgram() {
+  if (!jwt) { showLogin(); showToast('login with google first'); return; }
+  const btn = document.getElementById('coPay');
+  btn.disabled = true; btn.textContent = 'processing…';
+  try {
+    const p = bookPrograms.find(x => String(x._id) === String(coProgId));
+    const slot = p ? ((p.day || '') + ' ' + (p.startTime || '') + ' – ' + (p.endTime || '')) : '';
+    const { booking, invoice } = await api('/api/bookings', { method: 'POST',
+      body: JSON.stringify({ programId: coProgId, slot }) });
+    const label = p ? p.name + ' · ' + venueNameOf(p) : 'program';
+    const showDone = (ref) => {
+      document.getElementById('coDoneText').textContent = label + ' — booking ref ' + ref + ' (test mode)';
+      lastQr = { title: 'booking pass',
+        payload: 'SPORTSPHERE BOOKING\nProgram: ' + (p ? p.name : 'program') + '\nSlot: ' + slot + '\nRef: ' + ref,
+        caption: label + ' — booking ref ' + ref };
+      document.getElementById('coMain').style.display = 'none';
+      document.getElementById('coDone').style.display = '';
+    };
+    try {
+      const order = await api('/api/payments/order', { method: 'POST', body: JSON.stringify({ invoiceId: invoice._id }) });
+      openRazorpay(order, invoice._id, () => showDone(booking.bookingRef));
+    } catch (e) {
+      showToast('razorpay keys missing on server, test checkout');
+      const done = await api('/api/bookings/' + booking._id + '/confirm', { method: 'POST' });
+      showDone(done.bookingRef);
+    }
+  } catch (e) {
+    btn.disabled = false; btn.innerHTML = 'try again →';
+    showToast(e.message);
+  }
+}
+
 /* ---------- mock checkout (razorpay plugs in here later) ---------- */
 let coProgId = null;
 function bookContinue() {
@@ -1607,6 +1645,7 @@ function bookContinue() {
   document.getElementById('coTotal').textContent = inr(amt) + per;
   const payBtn = document.getElementById('coPay');
   payBtn.innerHTML = 'Pay ' + inr(amt) + ' →';
+  payBtn.setAttribute('onclick', 'payForProgram()');
   payBtn.disabled = false;
   document.getElementById('coMain').style.display = '';
   document.getElementById('coDone').style.display = 'none';
@@ -1655,39 +1694,19 @@ function showSubQr(i) {
 //   const { invoice } = await api('/api/subscriptions', { method: 'POST', body: JSON.stringify({ programId: coProgId }) });
 //   const order = await api('/api/payments/order', { method: 'POST', body: JSON.stringify({ invoiceId: invoice._id }) });
 //   openRazorpay(order, invoice._id);
-function mockPay() {
-  if (!coPlan && !jwt) { showLogin(); showToast('login with google first'); return; }
+function mockPay() { // plan fallback only (razorpay keys missing): subscription + invoice already in db
+  if (!jwt) { showLogin(); showToast('login with google first'); return; }
   const btn = document.getElementById('coPay');
   btn.disabled = true; btn.textContent = 'processing…';
-  setTimeout(async () => {
-    try {
-      const p = bookPrograms.find(x => String(x._id) === String(coProgId));
-      let ref;
-      if (coPlan) {
-        ref = 'SS' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 90 + 10); // plan: subscription + invoice already in db
-      } else {
-        const booking = await api('/api/bookings', { method: 'POST',
-          body: JSON.stringify({ programId: coProgId,
-            slot: p ? ((p.day || '') + ' ' + (p.startTime || '') + ' – ' + (p.endTime || '')) : '' }) });
-        ref = booking.bookingRef;
-      }
-      const label = coPlan ? coPlan.name : (p ? p.name + ' · ' + venueNameOf(p) : 'program');
-      document.getElementById('coDoneText').textContent =
-        label + ' — booking ref ' + ref + ' (test mode)';
-      const slot = p ? ((p.day || '') + ' ' + (p.startTime || '') + ' – ' + (p.endTime || '')) : '';
-      lastQr = coPlan
-        ? { title: 'membership pass',
-            payload: 'SPORTSPHERE SUBSCRIPTION\nPlan: ' + coPlan.name + '\nRef: ' + ref + '\nValid: 30 days',
-            caption: coPlan.name + ' — booking ref ' + ref }
-        : { title: 'booking pass',
-            payload: 'SPORTSPHERE BOOKING\nProgram: ' + (p ? p.name : 'program') + '\nSlot: ' + slot + '\nRef: ' + ref,
-            caption: label + ' — booking ref ' + ref };
-      document.getElementById('coMain').style.display = 'none';
-      document.getElementById('coDone').style.display = '';
-    } catch (e) {
-      btn.disabled = false; btn.innerHTML = 'try again →';
-      showToast(e.message);
-    }
+  setTimeout(() => {
+    const ref = 'SS' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 90 + 10);
+    document.getElementById('coDoneText').textContent =
+      coPlan.name + ' — booking ref ' + ref + ' (test mode)';
+    lastQr = { title: 'membership pass',
+      payload: 'SPORTSPHERE SUBSCRIPTION\nPlan: ' + coPlan.name + '\nRef: ' + ref + '\nValid: 30 days',
+      caption: coPlan.name + ' — booking ref ' + ref };
+    document.getElementById('coMain').style.display = 'none';
+    document.getElementById('coDone').style.display = '';
   }, 1200);
 }
 
