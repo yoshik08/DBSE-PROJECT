@@ -881,7 +881,8 @@ document.addEventListener('keydown', e => {
 function renderPlans() {
   const grid = document.getElementById('planGrid');
   if (!grid) return;
-  grid.innerHTML = (plansData || []).map(p =>
+  const allAccessPlans = (plansData || []).filter(p => (p.name || '').toLowerCase() === 'all-access');
+  grid.innerHTML = allAccessPlans.map(p =>
     '<div class="member-card"><div class="member-info"><h3>' + p.name + '</h3>' +
     '<p class="sec-sub">' + (p.description || '') + '</p></div>' +
     '<div class="member-buy"><p class="member-price">\u20b9' + Number(p.priceInr || 0).toLocaleString('en-IN') +
