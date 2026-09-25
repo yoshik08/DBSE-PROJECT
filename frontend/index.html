@@ -176,6 +176,12 @@ button{font-family:var(--sans)}
 .mfa-code-input{font-size:30px;letter-spacing:12px;text-align:center;width:230px;padding:12px 8px 12px 20px;margin:18px auto 4px;display:block;background:var(--bg);border:1px solid var(--line);border-radius:14px;color:var(--text);font-family:var(--mono,monospace)}
 .mfa-code-input:focus{outline:none;border-color:var(--lime)}
 .mfa-error{color:#ff6b6b;font-size:13px;min-height:18px;margin:8px 0 0}
+.form-field label{display:block;font-size:11px;color:var(--faint);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em}
+.form-field input,.form-field select,.form-field textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:var(--sans);box-sizing:border-box}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{outline:none;border-color:var(--lime)}
+.form-field select option{background:var(--bg2)}
+.dark-input{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:var(--sans);width:100%;box-sizing:border-box}
+.dark-input:focus{outline:none;border-color:var(--lime)}
 /* booking modal */
 .book-box{width:min(520px,94vw);text-align:left;padding:40px 36px}
 .book-box .eyebrow{text-align:left}
@@ -535,6 +541,31 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
   </div>
 </div>
 
+<div class="modal" id="formModal" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&event.target.tagName!=='SELECT')submitFormModal();if(event.key==='Escape')closeFormModal(null)">
+  <div class="modal-box" style="text-align:left;max-height:88vh;overflow-y:auto">
+    <div class="eyebrow" id="formEyebrow">ADMIN</div>
+    <h2 id="formTitle">form</h2>
+    <div id="formFields" style="display:grid;gap:12px;margin-top:16px"></div>
+    <p id="formError" class="mfa-error"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="ghost-btn" onclick="closeFormModal(null)">cancel</button>
+      <button class="primary-btn" id="formSubmitBtn" onclick="submitFormModal()">save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="confirmModal" onkeydown="if(event.key==='Escape')closeConfirmModal(false)">
+  <div class="modal-box">
+    <div class="eyebrow">ARE YOU SURE</div>
+    <h2 id="confirmTitle">delete this?</h2>
+    <p id="confirmMsg" style="margin-top:8px"></p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:20px">
+      <button class="ghost-btn" onclick="closeConfirmModal(false)">cancel</button>
+      <button class="primary-btn" id="confirmYesBtn" onclick="closeConfirmModal(true)">delete</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- portals -->
@@ -658,7 +689,7 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
 
       <div id="admin-users" class="admin-panel">
         <div class="panel-card">
-          <div class="table-title"><h3>users</h3><button class="small-btn" onclick="toast('add user form opened')">+ add user</button></div>
+          <div class="table-title"><h3>users</h3></div>
           <div class="portal-table"><div class="table-row"><span>loading users…</span></div></div>
         </div>
       </div>
@@ -687,10 +718,10 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
       <div id="admin-content" class="admin-panel">
         <div class="panel-card">
           <div class="table-title"><h3>contact info</h3><button class="small-btn" onclick="saveSiteContent()">save</button></div>
-          <div style="display:grid;gap:10px;max-width:420px">
-            <label style="font-size:13px;color:var(--faint)">phone<br><input id="scPhone" placeholder="+91 ..." style="width:100%"></label>
-            <label style="font-size:13px;color:var(--faint)">email<br><input id="scEmail" placeholder="hello@..." style="width:100%"></label>
-            <label style="font-size:13px;color:var(--faint)">address<br><input id="scAddress" placeholder="street, area, city" style="width:100%"></label>
+          <div style="display:grid;gap:12px;max-width:420px">
+            <div class="form-field"><label>phone</label><input id="scPhone" class="dark-input" placeholder="+91 ..."></div>
+            <div class="form-field"><label>email</label><input id="scEmail" class="dark-input" placeholder="hello@..."></div>
+            <div class="form-field"><label>address</label><input id="scAddress" class="dark-input" placeholder="street, area, city"></div>
           </div>
           <p style="font-size:12px;color:var(--faint)">shows in the site footer.</p>
         </div>
@@ -1169,6 +1200,64 @@ async function submitMfa() {
     else { err.textContent = e.message || 'wrong code, try again'; input.value = ''; input.focus(); }
   }
 }
+/* ---------- generic form + confirm modals (no native dialogs) ---------- */
+let formResolve = null, formFields = [];
+function openFormModal(opts) {
+  return new Promise(resolve => {
+    formResolve = resolve; formFields = opts.fields || [];
+    document.getElementById('formEyebrow').textContent = opts.eyebrow || 'ADMIN';
+    document.getElementById('formTitle').textContent = opts.title || 'form';
+    document.getElementById('formSubmitBtn').textContent = opts.submitText || 'save';
+    document.getElementById('formError').textContent = '';
+    const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    document.getElementById('formFields').innerHTML = formFields.map((f, i) => {
+      let input;
+      if (f.type === 'select') {
+        input = '<select id="ff' + i + '">' + (f.options || []).map(o =>
+          '<option value="' + esc(o.value) + '"' + (String(o.value) === String(f.value == null ? '' : f.value) ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
+      } else if (f.type === 'textarea') {
+        input = '<textarea id="ff' + i + '" rows="3" placeholder="' + esc(f.placeholder) + '">' + esc(f.value) + '</textarea>';
+      } else {
+        input = '<input id="ff' + i + '" type="' + esc(f.type || 'text') + '" value="' + esc(f.value) + '" placeholder="' + esc(f.placeholder) + '"' + (f.inputmode ? ' inputmode="' + esc(f.inputmode) + '"' : '') + '>';
+      }
+      return '<div class="form-field"><label>' + esc(f.label) + '</label>' + input + '</div>';
+    }).join('');
+    document.getElementById('formModal').classList.add('show');
+    setTimeout(() => { const first = document.getElementById('ff0'); if (first) first.focus(); }, 60);
+  });
+}
+function closeFormModal(result) {
+  document.getElementById('formModal').classList.remove('show');
+  const r = formResolve; formResolve = null; formFields = [];
+  if (r) r(result);
+}
+function submitFormModal() {
+  const err = document.getElementById('formError');
+  const values = {};
+  for (let i = 0; i < formFields.length; i++) {
+    const f = formFields[i];
+    const el = document.getElementById('ff' + i);
+    const v = el.value.trim();
+    if (f.required && !v) { err.textContent = f.label + ' is required'; el.focus(); return; }
+    values[f.key] = v;
+  }
+  closeFormModal(values);
+}
+let confirmResolve = null;
+function askConfirm(title, msg, yesText) {
+  return new Promise(resolve => {
+    confirmResolve = resolve;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg || '';
+    document.getElementById('confirmYesBtn').textContent = yesText || 'delete';
+    document.getElementById('confirmModal').classList.add('show');
+  });
+}
+function closeConfirmModal(val) {
+  document.getElementById('confirmModal').classList.remove('show');
+  const r = confirmResolve; confirmResolve = null;
+  if (r) r(val);
+}
 async function refreshMfaStatus() {
   const box = document.getElementById('mfaBox');
   if (!box) return;
@@ -1199,10 +1288,11 @@ async function enableMfa() {
   } catch (e) { showToast(e.message); }
 }
 async function disableMfa() {
-  const code = prompt('enter your current 6-digit code to turn mfa off:');
-  if (!code) return;
+  const v = await openFormModal({ eyebrow: 'SECURITY', title: 'disable mfa', submitText: 'disable',
+    fields: [{ key: 'code', label: 'current 6-digit code', required: true, inputmode: 'numeric', placeholder: '123456' }] });
+  if (!v) return;
   try {
-    await api('/api/admin/mfa/disable', { method: 'POST', body: JSON.stringify({ code: code.trim() }) });
+    await api('/api/admin/mfa/disable', { method: 'POST', body: JSON.stringify({ code: v.code }) });
     showToast('mfa disabled'); refreshMfaStatus();
   } catch (e) { showToast(e.message); }
 }
@@ -1220,16 +1310,17 @@ function renderAdminPrograms() {
 async function editProgram(id) {
   const p = (programsData || []).find(x => String(x._id) === String(id));
   if (!p) return;
-  const name = prompt('program name:', p.name);
-  if (name === null) return;
+  const v = await openFormModal({ eyebrow: 'PROGRAMS', title: 'edit program', submitText: 'save',
+    fields: [{ key: 'name', label: 'program name', required: true, value: p.name }] });
+  if (!v) return;
   try {
-    await api('/api/admin/programs/' + id, { method: 'PUT', body: JSON.stringify({ name: name.trim() || p.name }) });
+    await api('/api/admin/programs/' + id, { method: 'PUT', body: JSON.stringify({ name: v.name }) });
     programsData = await api('/api/programs');
     filterPrograms(); renderAdminPrograms(); showToast('program updated');
   } catch (e) { showToast(e.message); }
 }
 async function delProgram(id) {
-  if (!confirm('delete this program?')) return;
+  if (!await askConfirm('delete program?', 'the program will be removed from the site. this cannot be undone.')) return;
   try {
     await api('/api/admin/programs/' + id, { method: 'DELETE' });
     programsData = await api('/api/programs');
@@ -1274,16 +1365,23 @@ function renderAdminPlans() {
     (rows || '<div class="table-row"><span>no plans yet</span></div>');
 }
 async function addPlan() {
-  const name = prompt('plan name:'); if (!name) return;
-  const price = prompt('price in \u20b9:'); if (!price || isNaN(Number(price))) return;
-  const description = prompt('short description (optional):') || '';
+  const v = await openFormModal({ eyebrow: 'PLANS', title: 'new plan', submitText: 'add plan',
+    fields: [
+      { key: 'name', label: 'plan name', required: true, placeholder: 'e.g. Weekend Warrior' },
+      { key: 'priceInr', label: 'price (\u20b9)', required: true, type: 'number', inputmode: 'numeric', placeholder: 'e.g. 1500' },
+      { key: 'billingCycle', label: 'billing cycle', type: 'select',
+        options: [{ value: 'month', label: 'monthly' }, { value: 'quarter', label: 'quarterly' }, { value: 'year', label: 'yearly' }] },
+      { key: 'description', label: 'short description', type: 'textarea', placeholder: 'what is included' }
+    ] });
+  if (!v) return;
+  if (isNaN(Number(v.priceInr))) { showToast('price must be a number'); return; }
   try {
-    await api('/api/admin/plans', { method: 'POST', body: JSON.stringify({ name: name.trim(), priceInr: Number(price), description: description.trim() }) });
+    await api('/api/admin/plans', { method: 'POST', body: JSON.stringify({ name: v.name, priceInr: Number(v.priceInr), billingCycle: v.billingCycle, description: v.description }) });
     plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan added');
   } catch (e) { showToast(e.message); }
 }
 async function delPlan(id) {
-  if (!confirm('delete this plan?')) return;
+  if (!await askConfirm('delete plan?', 'the plan will disappear from the membership section. this cannot be undone.')) return;
   try {
     await api('/api/admin/plans/' + id, { method: 'DELETE' });
     plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan deleted');
@@ -1293,7 +1391,7 @@ function renderGymEmbeds() {
   const el = document.getElementById('adminGymsEmbed');
   el.innerHTML = (gymsData || []).map((g, i) =>
     '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap"><span style="min-width:130px;font-size:13px">' + g.name + '</span>' +
-    '<input id="embed' + i + '" placeholder="google maps embed url" value="' + (g.mapEmbedUrl || '') + '" style="flex:1;min-width:200px">' +
+    '<input id="embed' + i + '" class="dark-input" style="flex:1;min-width:200px" placeholder="google maps embed url" value="' + (g.mapEmbedUrl || '') + '">' +
     '<button class="small-btn" onclick="saveGymEmbed(\'' + g._id + '\',' + i + ')">save</button></div>').join('') ||
     '<p style="font-size:13px">no venues yet</p>';
 }
@@ -1322,19 +1420,25 @@ function exportCSV() {
   window.location = API + '/api/admin/export/transactions?token=' + encodeURIComponent(jwt);
 }
 async function addProgram() {
-  const name = prompt('program name:'); if (!name) return;
-  const sportName = prompt('sport name (exactly as shown on site):');
-  const sport = sportsData.find(s => s.name.toLowerCase() === (sportName || '').toLowerCase());
-  if (!sport) { showToast('sport not found'); return; }
+  const sports = (sportsData || []).map(s => ({ value: s._id, label: s.name }));
+  if (!sports.length) { showToast('no sports found'); return; }
+  const v = await openFormModal({ eyebrow: 'PROGRAMS', title: 'new program', submitText: 'add program',
+    fields: [
+      { key: 'name', label: 'program name', required: true, placeholder: 'e.g. Football Training' },
+      { key: 'sportId', label: 'sport', type: 'select', options: sports, value: sports[0].value },
+      { key: 'location', label: 'location', placeholder: 'venue, area' },
+      { key: 'day', label: 'day', placeholder: 'e.g. Monday' },
+      { key: 'startTime', label: 'start time', placeholder: 'e.g. 18:00' },
+      { key: 'endTime', label: 'end time', placeholder: 'e.g. 20:00' },
+      { key: 'capacity', label: 'capacity', type: 'number', value: '20', inputmode: 'numeric' },
+      { key: 'coach', label: 'coach name', placeholder: 'coach name' },
+      { key: 'level', label: 'level', type: 'select', options: [{ value: 'beginner', label: 'beginner' }, { value: 'intermediate', label: 'intermediate' }, { value: 'advanced', label: 'advanced' }] }
+    ] });
+  if (!v) return;
   const body = {
-    sportId: sport._id, name,
-    location: prompt('location:') || '',
-    day: prompt('day (e.g. Monday):') || '',
-    startTime: prompt('start time (e.g. 18:00):') || '',
-    endTime: prompt('end time (e.g. 20:00):') || '',
-    capacity: parseInt(prompt('capacity:') || '20', 10),
-    coach: prompt('coach name:') || '',
-    level: prompt('level (beginner/intermediate/advanced):') || 'beginner'
+    sportId: v.sportId, name: v.name, location: v.location, day: v.day,
+    startTime: v.startTime, endTime: v.endTime,
+    capacity: parseInt(v.capacity, 10) || 20, coach: v.coach, level: v.level || 'beginner'
   };
   try {
     await api('/api/admin/programs', { method: 'POST', body: JSON.stringify(body) });
@@ -1638,44 +1742,48 @@ function switchGymTab(tab, btn) {
   btn.classList.add('active');
 }
 async function addGymVenue() {
-  const name = prompt('venue name:'); if (!name) return;
-  const body = {
-    name,
-    area: prompt('area (e.g. Kondapur):') || '',
-    address: prompt('full address:') || '',
-    phone: prompt('phone:') || '',
-    lat: prompt('latitude for the map (optional):') || '',
-    lng: prompt('longitude for the map (optional):') || ''
-  };
+  const v = await openFormModal({ eyebrow: 'VENUES', title: 'new venue', submitText: 'add venue',
+    fields: [
+      { key: 'name', label: 'venue name', required: true, placeholder: 'e.g. Skykings Arena' },
+      { key: 'area', label: 'area', placeholder: 'e.g. Kondapur' },
+      { key: 'address', label: 'full address', placeholder: 'street, area, city' },
+      { key: 'phone', label: 'phone', placeholder: '+91 ...' },
+      { key: 'lat', label: 'latitude (optional)', inputmode: 'decimal', placeholder: 'e.g. 17.44' },
+      { key: 'lng', label: 'longitude (optional)', inputmode: 'decimal', placeholder: 'e.g. 78.35' }
+    ] });
+  if (!v) return;
   try {
-    await api('/api/gym/venues', { method: 'POST', body: JSON.stringify(body) });
+    await api('/api/gym/venues', { method: 'POST', body: JSON.stringify(v) });
     showToast('venue added'); refreshGym(); loadCatalog();
   } catch (e) { showToast(e.message); }
 }
 async function addGymProgram() {
   const d = gymDashboardCache;
   if (!d || !d.gyms.length) { showToast('no venues assigned'); return; }
-  let gymId = d.gyms[0]._id;
-  if (d.gyms.length > 1) {
-    const pick = prompt('venue number:\n' + d.gyms.map((g, i) => (i + 1) + '. ' + g.name).join('\n'));
-    const idx = parseInt(pick, 10) - 1;
-    if (!d.gyms[idx]) return;
-    gymId = d.gyms[idx]._id;
-  }
-  const name = prompt('program name:'); if (!name) return;
-  const sportName = prompt('sport (' + sportsData.map(s => s.name).join(', ') + '):');
-  const sport = sportsData.find(s => s.name.toLowerCase() === (sportName || '').toLowerCase());
-  if (!sport) { showToast('unknown sport'); return; }
+  const sports = (sportsData || []).map(s => ({ value: s._id, label: s.name }));
+  if (!sports.length) { showToast('no sports found'); return; }
+  const fields = [];
+  if (d.gyms.length > 1) fields.push({ key: 'gymId', label: 'venue', type: 'select',
+    options: d.gyms.map(g => ({ value: g._id, label: g.name })), value: d.gyms[0]._id });
+  fields.push(
+    { key: 'name', label: 'program name', required: true, placeholder: 'e.g. Morning Batch' },
+    { key: 'sportId', label: 'sport', type: 'select', options: sports, value: sports[0].value },
+    { key: 'day', label: 'day', placeholder: 'e.g. Monday' },
+    { key: 'startTime', label: 'start time', placeholder: 'e.g. 18:00' },
+    { key: 'endTime', label: 'end time', placeholder: 'e.g. 20:00' },
+    { key: 'capacity', label: 'capacity', type: 'number', value: '20', inputmode: 'numeric' },
+    { key: 'coach', label: 'coach name', placeholder: 'coach name' },
+    { key: 'level', label: 'level', type: 'select', options: [{ value: 'beginner', label: 'beginner' }, { value: 'intermediate', label: 'intermediate' }, { value: 'advanced', label: 'advanced' }] }
+  );
+  const v = await openFormModal({ eyebrow: 'PROGRAMS', title: 'new program', submitText: 'add program', fields });
+  if (!v) return;
+  const gymId = v.gymId || d.gyms[0]._id;
   const gym = d.gyms.find(g => String(g._id) === String(gymId));
   const body = {
-    sportId: sport._id, gymId, name,
+    sportId: v.sportId, gymId, name: v.name,
     location: gym.name + ', ' + (gym.area || ''),
-    day: prompt('day (e.g. Monday):') || '',
-    startTime: prompt('start time (e.g. 18:00):') || '',
-    endTime: prompt('end time (e.g. 20:00):') || '',
-    capacity: parseInt(prompt('capacity:') || '20', 10),
-    coach: prompt('coach name:') || '',
-    level: prompt('level (beginner/intermediate/advanced):') || 'beginner'
+    day: v.day, startTime: v.startTime, endTime: v.endTime,
+    capacity: parseInt(v.capacity, 10) || 20, coach: v.coach, level: v.level || 'beginner'
   };
   try {
     await api('/api/gym/programs', { method: 'POST', body: JSON.stringify(body) });
@@ -1767,6 +1875,7 @@ function switchAdminTab(tab, btn) {
   document.getElementById('admin-' + tab).classList.add('active');
   document.querySelectorAll('#adminPortal .admin-tab').forEach(x => x.classList.remove('active'));
   btn.classList.add('active');
+  if (tab === 'content') refreshSiteContent();
 }
 
 /* ---------- ai widget (answers from live catalog) ---------- */
