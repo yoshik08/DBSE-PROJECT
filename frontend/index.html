@@ -341,7 +341,7 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
     <a href="#venues" onclick="closePortals()">Venues</a>
   
     <button class="portal-btn" id="userPortalBtn" style="display:none" onclick="showPortal('user')">dashboard</button>
-    <button class="portal-btn admin-nav-btn" id="adminPortalBtn" style="display:none" onclick="showPortal('admin')">admin portal</button>
+    <button class="portal-btn admin-nav-btn" id="adminPortalBtn" onclick="showPortal('admin')">admin portal</button>
     <button class="portal-btn" id="gymPortalBtn" style="display:none" onclick="showPortal('gym')">gym portal</button>
   </nav>
   <div id="authContainer" style="display:flex;gap:8px;align-items:center">
@@ -523,8 +523,8 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
 
 <div class="modal" id="mfaModal">
   <div class="modal-box">
-    <div class="eyebrow">TWO FACTOR</div>
-    <h2>check your app</h2>
+    <div class="eyebrow" id="mfaEyebrow">TWO FACTOR</div>
+    <h2 id="mfaTitle">check your app</h2>
     <p>enter the 6-digit code from your authenticator app</p>
     <input id="mfaCodeInput" class="mfa-code-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')submitMfa()">
     <p id="mfaError" class="mfa-error"></p>
@@ -937,7 +937,6 @@ async function restoreSession() {
 function updateNavState(role) {
   document.getElementById('authContainer').style.display = 'none';
   document.getElementById('logoutContainer').style.display = 'flex';
-  document.getElementById('adminPortalBtn').style.display = role === 'admin' ? 'inline-block' : 'none';
   document.getElementById('gymPortalBtn').style.display = role === 'gym' ? 'inline-block' : 'none';
   document.getElementById('userPortalBtn').style.display = role === 'athlete' ? 'inline-block' : 'none';
 }
@@ -947,7 +946,6 @@ function logout(silent) {
   if (socket) { socket.disconnect(); socket = null; }
   document.getElementById('authContainer').style.display = 'flex';
   document.getElementById('logoutContainer').style.display = 'none';
-  document.getElementById('adminPortalBtn').style.display = 'none';
   document.getElementById('gymPortalBtn').style.display = 'none';
   document.getElementById('userPortalBtn').style.display = 'none';
   closePortals();
@@ -1124,13 +1122,25 @@ async function refreshAdmin() {
 }
 /* ---------- admin mfa (totp: google authenticator / duo / proton auth) ---------- */
 /* ---------- mfa login modal (replaces the native prompt) ---------- */
-let mfaTempToken = null, mfaAttempts = 0;
-function verifyMfa(tempToken) {
-  mfaTempToken = tempToken; mfaAttempts = 0;
+let mfaTempToken = null, mfaAttempts = 0, mfaMode = 'google'; // google = post-google step 2, direct = admin code-only
+function openMfaModal() {
   document.getElementById('mfaError').textContent = '';
   document.getElementById('mfaCodeInput').value = '';
   document.getElementById('mfaModal').classList.add('show');
   setTimeout(() => document.getElementById('mfaCodeInput').focus(), 60);
+}
+function verifyMfa(tempToken) {
+  mfaMode = 'google'; mfaTempToken = tempToken; mfaAttempts = 0;
+  document.getElementById('mfaEyebrow').textContent = 'TWO FACTOR';
+  document.getElementById('mfaTitle').textContent = 'check your app';
+  openMfaModal();
+}
+// admin button -> straight to the code, no google. identity = hardcoded superadmin email.
+function openAdminMfa() {
+  mfaMode = 'direct'; mfaTempToken = null; mfaAttempts = 0;
+  document.getElementById('mfaEyebrow').textContent = 'ADMIN LOGIN';
+  document.getElementById('mfaTitle').textContent = 'enter admin code';
+  openMfaModal();
 }
 function closeMfaModal() {
   document.getElementById('mfaModal').classList.remove('show');
@@ -1142,7 +1152,9 @@ async function submitMfa() {
   const code = input.value.trim();
   if (!/^\d{6}$/.test(code)) { err.textContent = 'enter the 6-digit code'; input.focus(); return; }
   try {
-    const data = await api('/api/auth/mfa', { method: 'POST', body: JSON.stringify({ tempToken: mfaTempToken, code }) });
+    const data = mfaMode === 'direct'
+      ? await api('/api/auth/admin-mfa', { method: 'POST', body: JSON.stringify({ code }) })
+      : await api('/api/auth/mfa', { method: 'POST', body: JSON.stringify({ tempToken: mfaTempToken, code }) });
     closeMfaModal();
     jwt = data.token;
     currentUser = data.user;
@@ -1150,10 +1162,11 @@ async function submitMfa() {
     updateNavState(currentUser.role);
     greetUser(currentUser.fullName);
     showToast('welcome, ' + currentUser.fullName.split(' ')[0]);
+    if (mfaMode === 'direct') showPortal('admin');
   } catch (e) {
     mfaAttempts++;
-    if (mfaAttempts >= 3) { closeMfaModal(); showToast('too many wrong codes, login again'); }
-    else { err.textContent = 'wrong code, try again'; input.value = ''; input.focus(); }
+    if (mfaAttempts >= 3) { closeMfaModal(); showToast('too many wrong codes, try again'); }
+    else { err.textContent = e.message || 'wrong code, try again'; input.value = ''; input.focus(); }
   }
 }
 async function refreshMfaStatus() {
@@ -1715,7 +1728,7 @@ async function addGymProgram() {
 /* ---------- portals & tabs ---------- */
 function toggleMenu() { document.body.classList.toggle('menu-open'); }
 function showPortal(type) {
-  if (type === 'admin' && (!currentUser || currentUser.role !== 'admin')) { showLogin(); showToast('admin login required'); return; }
+  if (type === 'admin' && (!currentUser || currentUser.role !== 'admin')) { openAdminMfa(); return; }
   if (type !== 'admin' && !currentUser) { showLogin(); showToast('login with google first'); return; }
   document.body.classList.remove('menu-open');
   document.querySelectorAll('.portal-section').forEach(x => x.classList.remove('active'));
