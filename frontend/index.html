@@ -137,6 +137,7 @@ button{font-family:var(--sans)}
 .sat-wrap{position:relative;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--bg2)}
 .sat-wrap iframe{width:100%;height:440px;border:0;display:block}
 .sat-tag{position:absolute;top:14px;left:14px;font-size:10.5px;letter-spacing:.2em;background:rgba(5,5,6,.72);border:1px solid var(--line);padding:8px 14px;border-radius:99px;color:#f4f2ed;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.area-chip{position:absolute;top:14px;right:14px;z-index:2;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;background:rgba(5,5,6,.72);border:1px solid var(--line);padding:8px 14px;border-radius:99px;color:var(--lime);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .explore-actions{display:flex;gap:12px;margin:18px 0}
 .explore-actions .primary-btn,.explore-actions .ghost-btn{flex:1;text-align:center}
 .ghost-btn{display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--line);color:var(--text);padding:15px 32px;border-radius:99px;font-size:14.5px;text-decoration:none;transition:border-color .2s}
@@ -251,6 +252,18 @@ button{font-family:var(--sans)}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1 !important;transform:none !important;transition:none}}
 .stat-row,.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:26px}
 .stat-row.cols5,.table-row.cols5{grid-template-columns:1fr 1.3fr 1fr 1.3fr .7fr}
+.table-row.cols8{grid-template-columns:.9fr .9fr 1.4fr .9fr 1.1fr .7fr .9fr .7fr}
+.place-sugg{display:grid;gap:4px;margin-top:6px}
+.place-sugg button{text-align:left;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);cursor:pointer}
+.place-sugg button:hover{border-color:var(--lime)}
+.place-sugg button small{display:block;color:var(--faint);font-size:11px;margin-top:2px}
+.auth-tabs{display:flex;gap:8px;justify-content:center;margin:14px 0}
+.auth-tab{background:none;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:8px 22px;font-size:13px;cursor:pointer}
+.auth-tab.active{color:var(--lime);border-color:rgba(216,255,63,.4)}
+.auth-input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px}
+.auth-input:focus{outline:none;border-color:var(--lime)}
+.auth-or{display:flex;align-items:center;gap:10px;margin:16px 0 4px;color:var(--faint);font-size:12px}
+.auth-or::before,.auth-or::after{content:'';flex:1;height:1px;background:var(--line)}
 .portal-stat{background:var(--bg);padding:28px 26px}
 .portal-stat span{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.14em}
 .portal-stat strong,.portal-stat b{display:block;font-family:var(--disp);font-size:32px;font-weight:500;letter-spacing:-.02em;margin-top:10px}
@@ -373,7 +386,6 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
     <a href="#venues" onclick="closePortals()">Venues</a>
   
     <button class="portal-btn" id="userPortalBtn" style="display:none" onclick="showPortal('user')">dashboard</button>
-    <button class="portal-btn admin-nav-btn" id="adminPortalBtn" onclick="showPortal('admin')">admin portal</button>
     <button class="portal-btn" id="gymPortalBtn" style="display:none" onclick="showPortal('gym')">gym portal</button>
   </nav>
   <button id="themeToggle" class="theme-toggle" aria-label="toggle dark and light mode" title="toggle theme">
@@ -381,8 +393,8 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
     <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
   </button>
   <div id="authContainer" style="display:flex;gap:8px;align-items:center">
-    <button class="outline-btn" id="adminNavBtn" onclick="showPortal('admin')">Admin</button>
-    <button class="small-btn" onclick="showLogin()">Login</button>
+    <button class="outline-btn" onclick="showLogin();authTab('login')">Login</button>
+    <button class="small-btn" onclick="showLogin();authTab('register')">Register</button>
   </div>
   <div id="logoutContainer" style="display:none;gap:8px;align-items:center">
     <button class="outline-btn" onclick="logout()">Logout</button>
@@ -438,7 +450,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
   </div>
   <div class="explore">
     <div class="explore-list reveal">
-      <div class="explore-label">Gyms</div>
+      <div class="explore-label" id="gymListLabel">Gyms</div>
       <div id="gymList"></div>
       <div class="explore-label">Sports</div>
       <div id="sportList"></div>
@@ -449,6 +461,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <div class="sat-wrap">
         <iframe id="exMap" title="satellite preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         <span class="sat-tag">SATELLITE</span>
+        <span class="area-chip" id="exArea"></span>
       </div>
       <div class="explore-actions">
         <a id="exDir" class="ghost-btn" target="_blank" rel="noopener">Directions</a>
@@ -549,24 +562,19 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
 <div class="modal" id="loginModal">
   <div class="modal-box">
     <button class="close" onclick="hideLogin()">×</button>
-    <div class="eyebrow">WELCOME BACK</div>
+    <div class="eyebrow">WELCOME</div>
     <h2 id="authTitle">Login</h2>
-    <div id="googleBtn" style="display:flex;justify-content:center;margin:10px 0"></div>
-    <p style="font-size:12px;opacity:.6;text-align:center">one click login with google, no passwords</p>
-  </div>
-</div>
-
-<div class="modal" id="mfaModal">
-  <div class="modal-box">
-    <div class="eyebrow" id="mfaEyebrow">TWO FACTOR</div>
-    <h2 id="mfaTitle">check your app</h2>
-    <p>enter the 6-digit code from your authenticator app</p>
-    <input id="mfaCodeInput" class="mfa-code-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')submitMfa()">
-    <p id="mfaError" class="mfa-error"></p>
-    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
-      <button class="ghost-btn" onclick="cancelMfa()">cancel</button>
-      <button class="primary-btn" onclick="submitMfa()">verify</button>
+    <div class="auth-tabs">
+      <button id="tabLogin" class="auth-tab active" onclick="authTab('login')">login</button>
+      <button id="tabRegister" class="auth-tab" onclick="authTab('register')">register</button>
     </div>
+    <div id="authNameWrap" style="display:none;margin-bottom:10px"><input id="authName" class="auth-input" placeholder="full name" autocomplete="name"></div>
+    <input id="authEmail" class="auth-input" type="email" placeholder="email" autocomplete="email" style="margin-bottom:10px">
+    <input id="authPass" class="auth-input" type="password" placeholder="password (6+ characters)" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitAuth()">
+    <p id="authError" class="mfa-error"></p>
+    <button class="primary-btn" id="authGoBtn" onclick="submitAuth()" style="width:100%;margin-top:6px">login</button>
+    <div class="auth-or"><span>or</span></div>
+    <div id="googleBtn" style="display:flex;justify-content:center;margin:10px 0"></div>
   </div>
 </div>
 
@@ -675,86 +683,6 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       </div>
     </main>
   </div>
-</section>
-
-<section id="adminPortal" class="portal-section">
-  <div class="portal-head">
-    <div>
-      <span class="eyebrow">management area</span>
-      <h2>admin portal</h2>
-      <p>Manage users, programs, subscriptions, invoices and payments.</p>
-    </div>
-    <button class="close-portal" onclick="closePortals()">back to site</button>
-  </div>
-
-  <div class="admin-stats">
-    <div class="portal-stat"><span>users</span><strong>0</strong><small>—</small></div>
-    <div class="portal-stat"><span>sports</span><strong>0</strong><small>—</small></div>
-    <div class="portal-stat"><span>subscriptions</span><strong>0</strong><small>active memberships</small></div>
-    <div class="portal-stat"><span>invoices</span><strong>0</strong><small>—</small></div>
-  </div>
-
-  <div class="admin-layout">
-    <aside class="portal-sidebar">
-      <button class="admin-tab active" onclick="switchAdminTab('dashboard', this)">dashboard</button>
-      <button class="admin-tab" onclick="switchAdminTab('users', this)">users</button>
-      <button class="admin-tab" onclick="switchAdminTab('programs', this)">programs</button>
-      <button class="admin-tab" onclick="switchAdminTab('subscriptions', this)">subscriptions</button>
-      <button class="admin-tab" onclick="switchAdminTab('billing', this)">billing</button>
-      <button class="admin-tab" onclick="switchAdminTab('content', this)">site content</button>
-    </aside>
-
-    <main class="portal-content">
-      <div id="admin-dashboard" class="admin-panel active">
-        <div class="panel-card">
-          <h3>system overview</h3>
-          <p>Use the admin sections to manage the sports subscription platform.</p>
-        </div>
-        <div class="panel-card">
-          <h3>two-factor login</h3>
-          <div id="mfaBox"><p>loading…</p></div>
-        </div>
-      </div>
-
-      <div id="admin-users" class="admin-panel">
-        <div class="panel-card">
-          <div class="table-title"><h3>users</h3></div>
-          <div class="portal-table"><div class="table-row"><span>loading users…</span></div></div>
-        </div>
-      </div>
-
-      <div id="admin-programs" class="admin-panel">
-        <div class="panel-card">
-          <div class="table-title"><h3>programs & timings</h3><button class="small-btn" onclick="addProgram()">+ add program</button></div>
-          <div class="portal-table"><div class="table-row"><span>loading programs…</span></div></div>
-        </div>
-      </div>
-
-      <div id="admin-subscriptions" class="admin-panel">
-        <div class="panel-card">
-          <h3>subscriptions</h3>
-          <div class="portal-table"><div class="table-row"><span>loading subscriptions…</span></div></div>
-        </div>
-      </div>
-
-      <div id="admin-billing" class="admin-panel">
-        <div class="panel-card">
-          <div class="table-title"><h3>invoices & payments</h3><button class="small-btn" onclick="exportCSV()">export csv</button></div>
-          <div class="portal-table"><div class="table-row"><span>loading invoices…</span></div></div>
-        </div>
-      </div>
-
-      <div id="admin-content" class="admin-panel">
-        <div class="panel-card">
-          <div class="table-title"><h3>subscription plans</h3><button class="small-btn" onclick="addPlan()">+ add plan</button></div>
-          <div class="portal-table" id="adminPlansTable"><div class="table-row"><span>loading plans…</span></div></div>
-          <p style="font-size:12px;color:var(--faint)">plans show up in the membership section on the site.</p>
-        </div>
-        <div class="panel-card">
-          <div class="table-title"><h3 id="sportsVenuesTitle">sports & venues</h3><button class="small-btn" id="backToSportsBtn" style="display:none" onclick="renderSportsVenues()">← all sports</button></div>
-          <div id="sportsVenuesBody"><div class="table-row"><span>loading…</span></div></div>
-        </div>
-      </div>
 </section>
 
 <!-- AI Assistant Widget -->
@@ -954,6 +882,38 @@ function showLogin() {
   initGoogleBtn();
 }
 function hideLogin() { document.getElementById('loginModal').classList.remove('show'); }
+/* ---------- email/password auth (register + login, google stays as option) ---------- */
+let authMode = 'login';
+function authTab(mode) {
+  authMode = mode;
+  document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', mode === 'register');
+  document.getElementById('authNameWrap').style.display = mode === 'register' ? '' : 'none';
+  document.getElementById('authTitle').textContent = mode === 'register' ? 'Register' : 'Login';
+  document.getElementById('authGoBtn').textContent = mode === 'register' ? 'create account' : 'login';
+  document.getElementById('authError').textContent = '';
+}
+async function submitAuth() {
+  const err = document.getElementById('authError');
+  const name = document.getElementById('authName').value.trim();
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPass').value;
+  err.textContent = '';
+  if (authMode === 'register' && !name) { err.textContent = 'tell us your name'; return; }
+  if (!email || !password) { err.textContent = 'email and password required'; return; }
+  try {
+    const url = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+    const body = authMode === 'register' ? { fullName: name, email, password } : { email, password };
+    const data = await api(url, { method: 'POST', body: JSON.stringify(body) });
+    if (data.mfaRequired) { hideLogin(); showToast('this is an admin account, use the admin portal'); return; }
+    jwt = data.token; currentUser = data.user;
+    localStorage.setItem('ss_jwt', jwt);
+    hideLogin();
+    updateNavState(currentUser.role);
+    greetUser(currentUser.fullName);
+    showToast('welcome, ' + currentUser.fullName.split(' ')[0]);
+  } catch (e) { err.textContent = e.message || 'auth failed'; }
+}
 let googleInit = false;
 function initGoogleBtn() {
   if (googleInit) return;
@@ -969,7 +929,7 @@ function initGoogleBtn() {
 async function onGoogle(resp) {
   try {
     const data = await api('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken: resp.credential }) });
-    if (data.mfaRequired) { hideLogin(); return verifyMfa(data.tempToken); }
+    if (data.mfaRequired) { hideLogin(); showToast('this is an admin account, use the admin portal'); return; }
     jwt = data.token; currentUser = data.user;
     localStorage.setItem('ss_jwt', jwt);
     hideLogin();
@@ -1010,7 +970,7 @@ function greetUser(name) {
 
 /* ---------- subscribe + pay ---------- */
 async function choosePlan(planId) {
-  if (!jwt) { showLogin(); showToast('login with google first'); return; }
+  if (!jwt) { showLogin(); showToast('login or register first'); return; }
   try {
     showToast('creating subscription...');
     const { invoice } = await api('/api/subscriptions', { method: 'POST', body: JSON.stringify({ planId }) });
@@ -1139,90 +1099,6 @@ async function saveProfile() {
   btn.disabled = false; btn.textContent = 'save changes';
 }
 
-/* ---------- admin portal ---------- */
-async function refreshAdmin() {
-  if (!currentUser || currentUser.role !== 'admin') return;
-  try {
-    const [stats, users, subs, invoices] = await Promise.all([
-      api('/api/admin/stats'), api('/api/admin/users'),
-      api('/api/admin/subscriptions'), api('/api/admin/invoices')
-    ]);
-    const boxes = document.querySelectorAll('#adminPortal .portal-stat strong');
-    const smalls = document.querySelectorAll('#adminPortal .portal-stat small');
-    if (boxes[0]) boxes[0].textContent = stats.users;
-    if (boxes[1]) boxes[1].textContent = sportsData.length;
-    if (smalls[1]) smalls[1].textContent = programsData.length + ' programs';
-    if (boxes[2]) boxes[2].textContent = stats.subscriptions;
-    if (boxes[3]) boxes[3].textContent = invoices.length;
-    if (smalls[3]) smalls[3].textContent = inr(stats.revenueInr) + ' revenue';
-
-    document.querySelector('#admin-users .portal-table').innerHTML =
-      '<div class="table-row table-header"><span>name</span><span>email</span><span>role</span><span>joined</span></div>' +
-      users.slice(0, 30).map(u =>
-        '<div class="table-row"><span>' + u.fullName + '</span><span>' + u.email + '</span><span>' + badge(u.role) +
-        '</span><span>' + fmtDate(u.createdAt) + '</span></div>').join('');
-
-    document.querySelector('#admin-subscriptions .portal-table').innerHTML =
-      '<div class="table-row cols5 table-header"><span>subscription</span><span>user</span><span>plan</span><span>program</span><span>status</span></div>' +
-      subs.slice(0, 30).map(s =>
-        '<div class="table-row cols5"><span>#SUB-' + shortId(s._id) + '</span><span>' + (s.userId ? s.userId.email : '-') +
-        '</span><span>' + (s.planId ? s.planId.name : '-') + '</span><span>' + (s.programId ? s.programId.name : '-') + '</span>' + badge(s.status) + '</div>').join('');
-
-    renderAdminInvoices(invoices);
-    renderAdminPrograms();
-    refreshMfaStatus();
-    refreshSiteContent();
-  } catch (e) { console.warn('admin refresh failed', e.message); }
-}
-/* ---------- admin mfa (totp: google authenticator / duo / proton auth) ---------- */
-/* ---------- mfa login modal (replaces the native prompt) ---------- */
-let mfaTempToken = null, mfaAttempts = 0, mfaMode = 'google'; // google = post-google step 2, direct = admin code-only
-function openMfaModal() {
-  document.getElementById('mfaError').textContent = '';
-  document.getElementById('mfaCodeInput').value = '';
-  document.getElementById('mfaModal').classList.add('show');
-  setTimeout(() => document.getElementById('mfaCodeInput').focus(), 60);
-}
-function verifyMfa(tempToken) {
-  mfaMode = 'google'; mfaTempToken = tempToken; mfaAttempts = 0;
-  document.getElementById('mfaEyebrow').textContent = 'TWO FACTOR';
-  document.getElementById('mfaTitle').textContent = 'check your app';
-  openMfaModal();
-}
-// admin button -> straight to the code, no google. identity = hardcoded superadmin email.
-function openAdminMfa() {
-  mfaMode = 'direct'; mfaTempToken = null; mfaAttempts = 0;
-  document.getElementById('mfaEyebrow').textContent = 'ADMIN LOGIN';
-  document.getElementById('mfaTitle').textContent = 'enter admin code';
-  openMfaModal();
-}
-function closeMfaModal() {
-  document.getElementById('mfaModal').classList.remove('show');
-}
-function cancelMfa() { closeMfaModal(); showToast('admin login cancelled'); }
-async function submitMfa() {
-  const input = document.getElementById('mfaCodeInput');
-  const err = document.getElementById('mfaError');
-  const code = input.value.trim();
-  if (!/^\d{6}$/.test(code)) { err.textContent = 'enter the 6-digit code'; input.focus(); return; }
-  try {
-    const data = mfaMode === 'direct'
-      ? await api('/api/auth/admin-mfa', { method: 'POST', body: JSON.stringify({ code }) })
-      : await api('/api/auth/mfa', { method: 'POST', body: JSON.stringify({ tempToken: mfaTempToken, code }) });
-    closeMfaModal();
-    jwt = data.token;
-    currentUser = data.user;
-    localStorage.setItem('ss_jwt', jwt);
-    updateNavState(currentUser.role);
-    greetUser(currentUser.fullName);
-    showToast('welcome, ' + currentUser.fullName.split(' ')[0]);
-    if (mfaMode === 'direct') showPortal('admin');
-  } catch (e) {
-    mfaAttempts++;
-    if (mfaAttempts >= 3) { closeMfaModal(); showToast('too many wrong codes, try again'); }
-    else { err.textContent = e.message || 'wrong code, try again'; input.value = ''; input.focus(); }
-  }
-}
 /* ---------- generic form + confirm modals (no native dialogs) ---------- */
 let formResolve = null, formFields = [];
 function openFormModal(opts) {
@@ -1240,6 +1116,9 @@ function openFormModal(opts) {
           '<option value="' + esc(o.value) + '"' + (String(o.value) === String(f.value == null ? '' : f.value) ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
       } else if (f.type === 'textarea') {
         input = '<textarea id="ff' + i + '" rows="3" placeholder="' + esc(f.placeholder) + '">' + esc(f.value) + '</textarea>';
+      } else if (f.type === 'placesearch') {
+        input = '<input id="ff' + i + '" type="text" value="' + esc(f.value) + '" placeholder="' + esc(f.placeholder) + '" autocomplete="off" oninput="placeSearch(' + i + ', this.value)">' +
+          '<div class="place-sugg" id="ffsugg' + i + '"></div>';
       } else {
         input = '<input id="ff' + i + '" type="' + esc(f.type || 'text') + '" value="' + esc(f.value) + '" placeholder="' + esc(f.placeholder) + '"' + (f.inputmode ? ' inputmode="' + esc(f.inputmode) + '"' : '') + '>';
       }
@@ -1253,6 +1132,43 @@ function closeFormModal(result) {
   document.getElementById('formModal').classList.remove('show');
   const r = formResolve; formResolve = null; formFields = [];
   if (r) r(result);
+}
+/* ---------- place search (nominatim, no api key). pick a suggestion ->
+   lat/lng autofill, google embed auto-builds from lat/lng on the site ---------- */
+let placeSearchTimer = null;
+function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+async function placeSearch(idx, q) {
+  const box = document.getElementById('ffsugg' + idx);
+  if (!box) return;
+  clearTimeout(placeSearchTimer);
+  q = (q || '').trim();
+  if (q.length < 3) { box.innerHTML = ''; return; }
+  placeSearchTimer = setTimeout(async () => {
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&q=' + encodeURIComponent(q));
+      const arr = await r.json();
+      box.innerHTML = arr.map(p => {
+        const label = p.display_name.split(',').slice(0, 3).join(',');
+        return '<button type="button" onclick="pickPlace(' + idx + ', this)" data-lat="' + p.lat + '" data-lon="' + p.lon +
+          '" data-name="' + escAttr(p.name || label) + '"><span>' + escAttr(label) + '</span>' +
+          '<small>' + escAttr(p.type || 'place') + ' · ' + String(p.lat).slice(0, 7) + ', ' + String(p.lon).slice(0, 7) + '</small></button>';
+      }).join('') || '<p style="font-size:12px;color:var(--faint)">no matches</p>';
+    } catch (e) { box.innerHTML = ''; }
+  }, 400);
+}
+function pickPlace(idx, btn) {
+  const lat = btn.getAttribute('data-lat'), lon = btn.getAttribute('data-lon');
+  const setByKey = (key, val) => {
+    const fi = (formFields || []).findIndex(f => f.key === key);
+    if (fi > -1) { const el = document.getElementById('ff' + fi); if (el) el.value = val; }
+  };
+  setByKey('lat', lat); setByKey('lng', lon);
+  const ni = (formFields || []).findIndex(f => f.key === 'name');
+  const nameEl = ni > -1 ? document.getElementById('ff' + ni) : null;
+  if (nameEl && !nameEl.value.trim()) nameEl.value = btn.getAttribute('data-name') || '';
+  document.getElementById('ffsugg' + idx).innerHTML = '';
+  document.getElementById('ff' + idx).value = btn.getAttribute('data-name') || '';
+  showToast('location set — map auto-embeds from lat/lng');
 }
 function submitFormModal() {
   const err = document.getElementById('formError');
@@ -1320,256 +1236,6 @@ async function disableMfa() {
   } catch (e) { showToast(e.message); }
 }
 
-/* ---------- admin programs (live from db) ---------- */
-function renderAdminPrograms() {
-  const el = document.querySelector('#admin-programs .portal-table');
-  const rows = (programsData || []).map(p =>
-    '<div class="table-row"><span>' + p.name + '</span><span>' + (p.location || '-') + '</span><span>' + (p.day || '-') + '</span><span>' +
-    ((p.startTime || '') + (p.endTime ? '\u2013' + p.endTime : '')) + '</span><span><button class="small-btn" onclick="editProgram(\'' + p._id + '\')">edit</button> ' +
-    '<button class="small-btn" onclick="delProgram(\'' + p._id + '\')">del</button></span></div>').join('');
-  el.innerHTML = '<div class="table-row table-header"><span>program</span><span>location</span><span>day</span><span>time</span><span>actions</span></div>' +
-    (rows || '<div class="table-row"><span>no programs yet</span></div>');
-}
-async function editProgram(id) {
-  const p = (programsData || []).find(x => String(x._id) === String(id));
-  if (!p) return;
-  const v = await openFormModal({ eyebrow: 'PROGRAMS', title: 'edit program', submitText: 'save',
-    fields: [{ key: 'name', label: 'program name', required: true, value: p.name }] });
-  if (!v) return;
-  try {
-    await api('/api/admin/programs/' + id, { method: 'PUT', body: JSON.stringify({ name: v.name }) });
-    programsData = await api('/api/programs');
-    filterPrograms(); renderAdminPrograms(); showToast('program updated');
-  } catch (e) { showToast(e.message); }
-}
-async function delProgram(id) {
-  if (!await askConfirm('delete program?', 'the program will be removed from the site. this cannot be undone.')) return;
-  try {
-    await api('/api/admin/programs/' + id, { method: 'DELETE' });
-    programsData = await api('/api/programs');
-    filterPrograms(); renderAdminPrograms(); showToast('program deleted');
-  } catch (e) { showToast(e.message); }
-}
-
-/* ---------- admin site cms: contact, plans, map embeds ---------- */
-async function loadSiteContent() {
-  try {
-    const sc = await api('/api/admin/site-content');
-    const c = [sc.contactPhone, sc.contactEmail, sc.contactAddress].filter(Boolean).join(' \u00b7 ');
-    if (c) document.getElementById('ftContact').textContent = c;
-  } catch (e) {}
-}
-async function refreshSiteContent() {
-  try {
-    renderAdminPlans();
-    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
-  } catch (e) {}
-}
-function renderAdminPlans() {
-  const el = document.getElementById('adminPlansTable');
-  const rows = (plansData || []).map(p =>
-    '<div class="table-row"><span>' + p.name + '</span><span>\u20b9' + p.priceInr + '/' + (p.billingCycle || 'month') + '</span><span>' +
-    '<button class="small-btn" onclick="editPlan(\'' + p._id + '\')">edit</button> ' +
-    '<button class="small-btn" onclick="delPlan(\'' + p._id + '\')">del</button></span></div>').join('');
-  el.innerHTML = '<div class="table-row table-header"><span>plan</span><span>price</span><span>actions</span></div>' +
-    (rows || '<div class="table-row"><span>no plans yet</span></div>');
-}
-async function addPlan() {
-  const v = await openFormModal({ eyebrow: 'PLANS', title: 'new plan', submitText: 'add plan',
-    fields: [
-      { key: 'name', label: 'plan name', required: true, placeholder: 'e.g. Weekend Warrior' },
-      { key: 'priceInr', label: 'price (\u20b9)', required: true, type: 'number', inputmode: 'numeric', placeholder: 'e.g. 1500' },
-      { key: 'billingCycle', label: 'billing cycle', type: 'select',
-        options: [{ value: 'monthly', label: 'monthly' }, { value: 'quarterly', label: 'quarterly' }, { value: 'yearly', label: 'yearly' }] },
-      { key: 'description', label: 'short description', type: 'textarea', placeholder: 'what is included' }
-    ] });
-  if (!v) return;
-  if (isNaN(Number(v.priceInr))) { showToast('price must be a number'); return; }
-  try {
-    await api('/api/admin/plans', { method: 'POST', body: JSON.stringify({ name: v.name, priceInr: Number(v.priceInr), billingCycle: v.billingCycle, description: v.description }) });
-    plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan added');
-  } catch (e) { showToast(e.message); }
-}
-async function editPlan(id) {
-  const p = (plansData || []).find(x => String(x._id) === String(id));
-  if (!p) return;
-  const v = await openFormModal({ eyebrow: 'PLANS', title: 'edit plan', submitText: 'save',
-    fields: [
-      { key: 'name', label: 'plan name', required: true, value: p.name },
-      { key: 'priceInr', label: 'price (\u20b9)', required: true, type: 'number', inputmode: 'numeric', value: p.priceInr },
-      { key: 'billingCycle', label: 'billing cycle', type: 'select', value: p.billingCycle || 'month',
-        options: [{ value: 'monthly', label: 'monthly' }, { value: 'quarterly', label: 'quarterly' }, { value: 'yearly', label: 'yearly' }] },
-      { key: 'description', label: 'short description', type: 'textarea', value: p.description }
-    ] });
-  if (!v) return;
-  try {
-    await api('/api/admin/plans/' + id, { method: 'PUT', body: JSON.stringify({ name: v.name, priceInr: Number(v.priceInr), billingCycle: v.billingCycle, description: v.description }) });
-    plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan updated');
-  } catch (e) { showToast(e.message); }
-}
-
-/* ---------- site content: sports -> venues, full venue edit ---------- */
-let activeSportId = null;
-function sportIdStr(p) {
-  const s = p.sportId;
-  if (!s) return null;
-  return String(typeof s === 'object' ? s._id : s);
-}
-function progGymIdStr(p) {
-  const g = p.gymId;
-  if (!g) return null;
-  return String(typeof g === 'object' ? g._id : g);
-}
-function renderSportsVenues() {
-  activeSportId = null;
-  document.getElementById('backToSportsBtn').style.display = 'none';
-  document.getElementById('sportsVenuesTitle').textContent = 'sports & venues';
-  const rows = (sportsData || []).map(s => {
-    const sid = String(s._id);
-    const progs = (programsData || []).filter(p => sportIdStr(p) === sid);
-    const venueIds = [...new Set(progs.map(progGymIdStr).filter(Boolean))];
-    return '<div class="table-row"><span>' + s.name + '</span><span>' + venueIds.length + ' venues</span><span>' + progs.length + ' programs</span>' +
-      '<span><button class="small-btn" onclick="openSport(\'' + s._id + '\')">venues \u2192</button></span></div>';
-  }).join('');
-  document.getElementById('sportsVenuesBody').innerHTML =
-    '<div class="portal-table"><div class="table-row table-header"><span>sport</span><span>venues</span><span>programs</span><span></span></div>' +
-    (rows || '<div class="table-row"><span>no sports yet</span></div>') + '</div>';
-}
-function openSport(sportId) {
-  activeSportId = String(sportId);
-  const sport = (sportsData || []).find(s => String(s._id) === activeSportId);
-  document.getElementById('sportsVenuesTitle').textContent = sport ? sport.name + ' venues' : 'venues';
-  document.getElementById('backToSportsBtn').style.display = '';
-  const progs = (programsData || []).filter(p => sportIdStr(p) === activeSportId);
-  const venueIds = [...new Set(progs.map(progGymIdStr).filter(Boolean))];
-  const cards = venueIds.map(vid => {
-    const g = (gymsData || []).find(x => String(x._id) === vid);
-    if (!g) return '';
-    const gprogs = progs.filter(p => progGymIdStr(p) === vid);
-    const progList = gprogs.map(p => p.name + (p.priceInr ? ' \u00b7 \u20b9' + Number(p.priceInr).toLocaleString('en-IN') : '')).join('<br>');
-    const mapTag = g.mapEmbedUrl
-      ? '<span style="font-size:11px;color:var(--lime)">custom map</span>'
-      : '<span style="font-size:11px;color:var(--faint)">auto map</span>';
-    return '<div class="panel-card" style="margin-bottom:10px">' +
-      '<div class="table-title"><h3 style="font-size:15px">' + g.name + '</h3><button class="small-btn" onclick="editVenue(\'' + g._id + '\')">edit</button></div>' +
-      '<p style="font-size:13px;color:var(--faint)">' + [g.area, g.phone].filter(Boolean).join(' \u00b7 ') + ' ' + mapTag + '</p>' +
-      (progList ? '<p style="font-size:13px;margin-top:6px;line-height:1.7">' + progList + '</p>' : '') +
-      '</div>';
-  }).join('');
-  document.getElementById('sportsVenuesBody').innerHTML =
-    (cards || '<p style="font-size:13px;color:var(--faint)">no venues for this sport yet.</p>') +
-    '<button class="small-btn" onclick="addVenue()">+ add venue</button>';
-}
-async function editVenue(id) {
-  const g = (gymsData || []).find(x => String(x._id) === String(id));
-  if (!g) return;
-  const v = await openFormModal({ eyebrow: 'VENUES', title: 'edit venue', submitText: 'save',
-    fields: [
-      { key: 'name', label: 'venue name', required: true, value: g.name },
-      { key: 'area', label: 'area', value: g.area },
-      { key: 'address', label: 'full address', value: g.address },
-      { key: 'phone', label: 'phone', value: g.phone },
-      { key: 'email', label: 'email', value: g.email },
-      { key: 'lat', label: 'latitude', inputmode: 'decimal', value: g.lat },
-      { key: 'lng', label: 'longitude', inputmode: 'decimal', value: g.lng },
-      { key: 'mapEmbedUrl', label: 'google maps embed link', value: g.mapEmbedUrl, placeholder: 'empty = auto map' }
-    ] });
-  if (!v) return;
-  const body = Object.assign({}, v);
-  if (body.lat === '') delete body.lat; else body.lat = Number(body.lat);
-  if (body.lng === '') delete body.lng; else body.lng = Number(body.lng);
-  try {
-    await api('/api/admin/gyms/' + id, { method: 'PUT', body: JSON.stringify(body) });
-    gymsData = await api('/api/gyms'); loadCatalog();
-    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
-    showToast('venue updated');
-  } catch (e) { showToast(e.message); }
-}
-async function addVenue() {
-  const sports = (sportsData || []).map(s => ({ value: String(s._id), label: s.name }));
-  const v = await openFormModal({ eyebrow: 'VENUES', title: 'new venue', submitText: 'add venue',
-    fields: [
-      ...(sports.length > 1 ? [{ key: '_sport', label: 'sport', type: 'select', options: sports, value: activeSportId || sports[0].value }] : []),
-      { key: 'name', label: 'venue name', required: true, placeholder: 'e.g. Skykings Arena' },
-      { key: 'area', label: 'place / area', placeholder: 'e.g. Kondapur' },
-      { key: 'address', label: 'full address', placeholder: 'street, area, city' },
-      { key: 'phone', label: 'contact phone', placeholder: '+91 ...' },
-      { key: 'email', label: 'contact email', placeholder: 'hello@...' },
-      { key: 'lat', label: 'latitude', inputmode: 'decimal', placeholder: 'e.g. 17.4231' },
-      { key: 'lng', label: 'longitude', inputmode: 'decimal', placeholder: 'e.g. 78.4342' },
-      { key: 'mapEmbedUrl', label: 'google maps embed link', placeholder: 'empty = auto map from lat/lng' }
-    ] });
-  if (!v) return;
-  delete v._sport;
-  if (v.lat === '') delete v.lat; else v.lat = Number(v.lat);
-  if (v.lng === '') delete v.lng; else v.lng = Number(v.lng);
-  try {
-    await api('/api/admin/gyms', { method: 'POST', body: JSON.stringify(v) });
-    gymsData = await api('/api/gyms'); loadCatalog();
-    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
-    showToast('venue added. add programs for it in the programs tab.');
-  } catch (e) { showToast(e.message); }
-}
-async function delPlan(id) {
-  if (!await askConfirm('delete plan?', 'the plan will disappear from the membership section. this cannot be undone.')) return;
-  try {
-    await api('/api/admin/plans/' + id, { method: 'DELETE' });
-    plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan deleted');
-  } catch (e) { showToast(e.message); }
-}
-function renderAdminInvoices(invoices) {
-  document.querySelector('#admin-billing .portal-table').innerHTML =
-    '<div class="table-row table-header"><span>invoice</span><span>user</span><span>amount</span><span>status</span></div>' +
-    invoices.slice(0, 30).map(i =>
-      '<div class="table-row"><span>#INV-' + shortId(i._id) + '</span><span>' +
-      (i.subscriptionId && i.subscriptionId.userId ? i.subscriptionId.userId.email : '-') + '</span><span>' +
-      inr(i.amountInr) + '</span>' + badge(i.status) + '</div>').join('');
-}
-async function refreshAdminBilling() {
-  if (!currentUser || currentUser.role !== 'admin') return;
-  try { renderAdminInvoices(await api('/api/admin/invoices')); }
-  catch (e) { console.warn('billing refresh failed', e.message); }
-}
-function exportCSV() {
-  window.location = API + '/api/admin/export/transactions?token=' + encodeURIComponent(jwt);
-}
-async function addProgram() {
-  const sports = (sportsData || []).map(s => ({ value: s._id, label: s.name }));
-  if (!sports.length) { showToast('no sports found'); return; }
-  const v = await openFormModal({ eyebrow: 'PROGRAMS', title: 'new program', submitText: 'add program',
-    fields: [
-      { key: 'name', label: 'program name', required: true, placeholder: 'e.g. Football Training' },
-      { key: 'sportId', label: 'sport', type: 'select', options: sports, value: sports[0].value },
-      { key: 'location', label: 'location', placeholder: 'venue, area' },
-      { key: 'day', label: 'day', placeholder: 'e.g. Monday' },
-      { key: 'startTime', label: 'start time', placeholder: 'e.g. 18:00' },
-      { key: 'endTime', label: 'end time', placeholder: 'e.g. 20:00' },
-      { key: 'capacity', label: 'capacity', type: 'number', value: '20', inputmode: 'numeric' },
-      { key: 'coach', label: 'coach name', placeholder: 'coach name' },
-      { key: 'level', label: 'level', type: 'select', options: [{ value: 'beginner', label: 'beginner' }, { value: 'intermediate', label: 'intermediate' }, { value: 'advanced', label: 'advanced' }] }
-    ] });
-  if (!v) return;
-  const body = {
-    sportId: v.sportId, name: v.name, location: v.location, day: v.day,
-    startTime: v.startTime, endTime: v.endTime,
-    capacity: parseInt(v.capacity, 10) || 20, coach: v.coach, level: v.level || 'beginner'
-  };
-  try {
-    await api('/api/admin/programs', { method: 'POST', body: JSON.stringify(body) });
-    programsData = await api('/api/programs');
-    filterPrograms(); refreshAdmin();
-    showToast('program added');
-  } catch (e) { showToast(e.message); }
-}
-
-/* ---------- realtime (admin invoice sync) ---------- */
-function connectRealtime() {
-  if (socket || !jwt || !currentUser || currentUser.role !== 'admin' || typeof io === 'undefined') return;
-  socket = io(API, { auth: { token: jwt } });
-  socket.on('invoice:created', () => { showToast('new invoice created'); refreshAdminBilling(); });
-  socket.on('invoice:updated', () => { showToast('invoice updated'); refreshAdminBilling(); });
-}
-
 /* ---------- booking modal ---------- */
 let bookPrograms = [], bookSportSel = null, bookProgSel = null;
 function openBooking() {
@@ -1626,7 +1292,7 @@ function updateBookTotal() {
 }
 function closeBook() { document.getElementById('bookModal').classList.remove('show'); }
 async function payForProgram() {
-  if (!jwt) { showLogin(); showToast('login with google first'); return; }
+  if (!jwt) { showLogin(); showToast('login or register first'); return; }
   const btn = document.getElementById('coPay');
   btn.disabled = true; btn.textContent = 'processing…';
   try {
@@ -1724,7 +1390,7 @@ function showSubQr(i) {
 //   const order = await api('/api/payments/order', { method: 'POST', body: JSON.stringify({ invoiceId: invoice._id }) });
 //   openRazorpay(order, invoice._id);
 function mockPay() { // plan fallback only (razorpay keys missing): subscription + invoice already in db
-  if (!jwt) { showLogin(); showToast('login with google first'); return; }
+  if (!jwt) { showLogin(); showToast('login or register first'); return; }
   const btn = document.getElementById('coPay');
   btn.disabled = true; btn.textContent = 'processing…';
   setTimeout(() => {
@@ -1785,7 +1451,10 @@ function bookProgramDirect() {
 const FEATURED_GYMS = ["Gold's Gym Banjara Hills", "Gold's Gym Himayat Nagar", "F45 Training Basheer Bagh", "F45 Training Madhapur", "Snap Fitness Madhapur", "Anytime Fitness Jubilee Hills"];
 const sportNameOf = p => { const s = sportsData.find(x => String(x._id) === String(sportIdOf(p))); return s ? s.name : 'General training'; };
 let currentExplore = { kind: 'gym', id: null };
+let exploreSportId = null;
 function gymById(id) { return gymsData.find(g => String(g._id) === String(id)); }
+function sportIdOfGym(g) { const s = g.sportId; return s ? String(typeof s === 'object' ? s._id : s) : null; }
+function venuesOfSport(sportId) { return (gymsData || []).filter(g => sportIdOfGym(g) === String(sportId)); }
 function gymOfProgram(p) { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return gymById(gid); }
 function sportVenue(sportId) { const p = programsData.find(p => sportIdOf(p) === sportId); return p ? gymOfProgram(p) : null; }
 function exploreItem(kind, key, name, sub, i) {
@@ -1793,14 +1462,29 @@ function exploreItem(kind, key, name, sub, i) {
     ' onmouseenter="previewPlace(\'' + kind + '\',\'' + key + '\')" onclick="previewPlace(\'' + kind + '\',\'' + key + '\')">' +
     '<h4>' + name + '</h4><span>' + sub + '</span></button>';
 }
+function exploreSportItem(s, i) {
+  const n = venuesOfSport(s._id).length;
+  return '<button class="explore-item reveal" data-key="' + s._id + '" style="transition-delay:' + Math.min(i * 35, 420) + 'ms"' +
+    ' onmouseenter="previewPlace(\'sport\',\'' + s._id + '\')" onclick="exploreSport(\'' + s._id + '\')">' +
+    '<h4>' + (s.icon || '') + ' ' + s.name + '</h4><span>' + n + ' venues</span></button>';
+}
 function renderExplore() {
   const gyms = FEATURED_GYMS.map(n => gymsData.find(g => g.name === n)).filter(Boolean);
+  document.getElementById('gymListLabel').textContent = 'Gyms';
   document.getElementById('gymList').innerHTML = gyms.map((g, i) => exploreItem('gym', g._id, g.name, g.area || '', i)).join('');
-  document.getElementById('sportList').innerHTML = sportsData.map((s, i) => {
-    const v = sportVenue(s._id);
-    return exploreItem('sport', s._id, (s.icon || '') + ' ' + s.name, v ? v.name : '', i);
-  }).join('');
+  document.getElementById('sportList').innerHTML = sportsData.map((s, i) => exploreSportItem(s, i)).join('');
+  exploreSportId = null;
   if (gyms[0]) previewPlace('gym', gyms[0]._id);
+}
+function exploreSport(sportId) {
+  exploreSportId = String(sportId);
+  const s = sportsData.find(x => String(x._id) === exploreSportId);
+  const venues = venuesOfSport(exploreSportId);
+  document.getElementById('gymListLabel').innerHTML = ((s ? (s.icon || '') + ' ' + s.name : '') + ' venues') +
+    ' <a href="javascript:void(0)" onclick="renderExplore()" style="float:right;letter-spacing:0;text-transform:none;font-size:12px">\u2190 all</a>';
+  document.getElementById('gymList').innerHTML = venues.map((g, i) => exploreItem('gym', g._id, g.name, g.area || '', i)).join('') ||
+    '<div><strong>no venues yet</strong></div>';
+  if (venues[0]) previewPlace('gym', venues[0]._id);
 }
 function programRows(ps) {
   return ps.map(p => '<div class="ex-prow"><strong>' + p.name + '</strong><span>' + (p.day || '') + ' · ' + (p.startTime || '') + '–' + (p.endTime || '') + '</span></div>').join('');
@@ -1808,22 +1492,24 @@ function programRows(ps) {
 function previewPlace(kind, id) {
   currentExplore = { kind, id };
   document.querySelectorAll('.explore-item').forEach(el => el.classList.toggle('active', el.dataset.key === String(id)));
-  let name = '', sub = '', lat = null, lng = null, detail = '', phone = '', email = '';
+  let name = '', sub = '', lat = null, lng = null, detail = '', phone = '', email = '', areaName = '';
   if (kind === 'gym') {
     const g = gymById(id); if (!g) return;
-    name = g.name; sub = [g.area, g.address].filter(Boolean).join(' · ');
+    name = g.name; sub = [g.area, g.address].filter(Boolean).join(' · '); areaName = g.area || '';
     lat = g.lat; lng = g.lng; phone = g.phone || ''; email = g.email || '';
     const ps = programsData.filter(p => { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return String(gid) === String(id); });
     detail = programRows(ps) || '<p style="opacity:.6;font-size:13px">no programs listed yet</p>';
   } else {
     const s = sportsData.find(x => String(x._id) === String(id)); if (!s) return;
     const v = sportVenue(id);
-    name = (s.icon || '') + ' ' + s.name; sub = v ? ('Flagship venue · ' + v.name) : '';
+    name = (s.icon || '') + ' ' + s.name; sub = v ? ('Flagship venue · ' + v.name) : ''; areaName = v ? (v.area || '') : '';
     if (v) { lat = v.lat; lng = v.lng; }
     detail = programRows(programsData.filter(p => sportIdOf(p) === String(id)));
   }
   document.getElementById('exName').textContent = name;
   document.getElementById('exSub').textContent = sub;
+  document.getElementById('exArea').textContent = areaName;
+  document.getElementById('exArea').style.display = areaName ? '' : 'none';
   const contact = [phone, email].filter(Boolean).join(' · ');
   document.getElementById('exDetail').innerHTML = (contact ? '<p class="ex-contact">' + contact + '</p>' : '') + detail;
   const q = (lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad');
@@ -1963,24 +1649,20 @@ async function addGymProgram() {
 /* ---------- portals & tabs ---------- */
 function toggleMenu() { document.body.classList.toggle('menu-open'); }
 function showPortal(type) {
-  if (type === 'admin' && (!currentUser || currentUser.role !== 'admin')) { openAdminMfa(); return; }
-  if (type !== 'admin' && !currentUser) { showLogin(); showToast('login with google first'); return; }
+  if (type === 'admin') { showToast('admins log in at the admin portal'); return; }
+  if (!currentUser) { showLogin(); showToast('login first'); return; }
   document.body.classList.remove('menu-open');
   document.querySelectorAll('.portal-section').forEach(x => x.classList.remove('active'));
   document.querySelector('main').style.display = 'none';
   document.querySelector('footer').style.display = 'none';
-  const target = document.getElementById(type === 'admin' ? 'adminPortal' : type === 'gym' ? 'gymPortal' : 'userPortal');
+  const target = document.getElementById(type === 'gym' ? 'gymPortal' : 'userPortal');
   target.classList.add('active');
   if (type === 'user') {
     refreshUserPortal();
     switchUserTab('overview', document.querySelector('#userPortal .portal-tab'));
-  } else if (type === 'gym') {
+  } else {
     refreshGym();
     switchGymTab('overview', document.querySelector('#gymPortal .admin-tab'));
-  } else {
-    refreshAdmin();
-    connectRealtime();
-    switchAdminTab('dashboard', document.querySelector('#adminPortal .admin-tab'));
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1997,14 +1679,6 @@ function switchUserTab(tab, btn) {
   document.querySelectorAll('#userPortal .portal-tab').forEach(x => x.classList.remove('active'));
   btn.classList.add('active');
 }
-function switchAdminTab(tab, btn) {
-  document.querySelectorAll('#adminPortal .admin-panel').forEach(x => x.classList.remove('active'));
-  document.getElementById('admin-' + tab).classList.add('active');
-  document.querySelectorAll('#adminPortal .admin-tab').forEach(x => x.classList.remove('active'));
-  btn.classList.add('active');
-  if (tab === 'content') refreshSiteContent();
-}
-
 /* ---------- ai widget (answers from live catalog) ---------- */
 function toggleChat() {
   const chat = document.getElementById('aiChatWindow');
