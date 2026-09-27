@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- SPORTSPHERE ADMIN FINAL-FIXED v4 2026-09-27 -->
+
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -541,7 +543,7 @@ async function refreshAdmin() {
     if (boxes[1]) boxes[1].textContent = sportsData.length;
     if (smalls[1]) smalls[1].textContent = programsData.length + ' programs';
     if (boxes[2]) boxes[2].textContent = stats.subscriptions;
-    if (boxes[3]) boxes[3].textContent = invoices.length;
+    if (boxes[3]) boxes[3].textContent = txns.length;
     if (smalls[3]) smalls[3].textContent = inr(stats.revenueInr) + ' revenue';
 
     document.querySelector('#admin-users .portal-table').innerHTML =
@@ -995,6 +997,14 @@ function connectRealtime() {
   socket.on('invoice:updated', () => { showToast('invoice updated'); refreshAdmin(); });
 }
 
+
+function switchAdminTab(tab, btn) {
+  document.querySelectorAll('#adminPortal .admin-panel').forEach(x => x.classList.remove('active'));
+  document.getElementById('admin-' + tab).classList.add('active');
+  document.querySelectorAll('#adminPortal .admin-tab').forEach(x => x.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'venues') refreshSiteContent();
+}
 
 /* ---------- custom cursor ---------- */
 (function () {
