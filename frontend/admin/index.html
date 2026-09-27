@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SportSphere — Sports Subscription</title>
+  <title>SportSphere Admin — Sports Subscription</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@400;500;600;700&family=Instrument+Serif:ital,wght@1,400&display=swap" rel="stylesheet">
@@ -137,6 +137,7 @@ button{font-family:var(--sans)}
 .sat-wrap{position:relative;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--bg2)}
 .sat-wrap iframe{width:100%;height:440px;border:0;display:block}
 .sat-tag{position:absolute;top:14px;left:14px;font-size:10.5px;letter-spacing:.2em;background:rgba(5,5,6,.72);border:1px solid var(--line);padding:8px 14px;border-radius:99px;color:#f4f2ed;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.area-chip{position:absolute;top:14px;right:14px;z-index:2;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;background:rgba(5,5,6,.72);border:1px solid var(--line);padding:8px 14px;border-radius:99px;color:var(--lime);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .explore-actions{display:flex;gap:12px;margin:18px 0}
 .explore-actions .primary-btn,.explore-actions .ghost-btn{flex:1;text-align:center}
 .ghost-btn{display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--line);color:var(--text);padding:15px 32px;border-radius:99px;font-size:14.5px;text-decoration:none;transition:border-color .2s}
@@ -251,6 +252,11 @@ button{font-family:var(--sans)}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1 !important;transform:none !important;transition:none}}
 .stat-row,.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:26px}
 .stat-row.cols5,.table-row.cols5{grid-template-columns:1fr 1.3fr 1fr 1.3fr .7fr}
+.table-row.cols8{grid-template-columns:.9fr .9fr 1.4fr .9fr 1.1fr .7fr .9fr .7fr}
+.place-sugg{display:grid;gap:4px;margin-top:6px}
+.place-sugg button{text-align:left;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);cursor:pointer}
+.place-sugg button:hover{border-color:var(--lime)}
+.place-sugg button small{display:block;color:var(--faint);font-size:11px;margin-top:2px}
 .portal-stat{background:var(--bg);padding:28px 26px}
 .portal-stat span{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.14em}
 .portal-stat strong,.portal-stat b{display:block;font-family:var(--disp);font-size:32px;font-weight:500;letter-spacing:-.02em;margin-top:10px}
@@ -355,328 +361,31 @@ footer{border-top:1px solid var(--line-soft);padding:44px 6%;display:flex;justif
 <script>
 try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}document.documentElement.dataset.theme=_t}catch(e){document.documentElement.dataset.theme='dark'}
 </script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
+<style>
+.admin-topbar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px 4%;background:rgba(5,5,6,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.admin-topbar .brand{font-weight:800;letter-spacing:.02em;text-decoration:none;color:var(--text)}
+.admin-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(60% 50% at 50% 0%,rgba(216,255,63,.07),transparent 70%)}
+.admin-login-card{max-width:400px;width:100%;text-align:center;border:1px solid var(--line);border-radius:20px;padding:44px 36px;background:var(--bg2)}
+.admin-login-card h1{margin:10px 0 8px;font-size:28px}
+.admin-login-card p{color:var(--muted);font-size:14px;margin-bottom:22px}
+#adminApp .portal-section{padding-top:110px}
+</style>
+
 <body>
-
-<header class="navbar">
-  <a class="brand" href="https://dbse-project.vercel.app"><span class="brand-mark">S</span> SportSphere</a>
-  <button class="menu-btn" id="menuBtn" onclick="toggleMenu()" aria-label="menu">☰</button>
-  <nav id="mainNav">
-    <a href="#home" onclick="closePortals()">Home</a>
-    <a href="#sports" onclick="closePortals()">Sports</a>
-    <a href="#programs" onclick="closePortals()">Programs</a>
-    <a href="#membership" onclick="closePortals()">Membership</a>
-    <a href="#billing" onclick="closePortals()">Billing</a>
-    <a href="#venues" onclick="closePortals()">Venues</a>
-  
-    <button class="portal-btn" id="userPortalBtn" style="display:none" onclick="showPortal('user')">dashboard</button>
-    <button class="portal-btn admin-nav-btn" id="adminPortalBtn" onclick="showPortal('admin')">admin portal</button>
-    <button class="portal-btn" id="gymPortalBtn" style="display:none" onclick="showPortal('gym')">gym portal</button>
-  </nav>
-  <button id="themeToggle" class="theme-toggle" aria-label="toggle dark and light mode" title="toggle theme">
-    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-  </button>
-  <div id="authContainer" style="display:flex;gap:8px;align-items:center">
-    <button class="outline-btn" id="adminNavBtn" onclick="showPortal('admin')">Admin</button>
-    <button class="small-btn" onclick="showLogin()">Login</button>
+<div id="adminLogin" class="admin-login">
+  <div class="admin-login-card">
+    <span class="eyebrow">restricted area</span>
+    <h1>sportsphere admin</h1>
+    <p>enter the 6-digit code from your authenticator app. no google login here.</p>
+    <button class="primary-btn" onclick="openAdminMfa()">enter admin code</button>
   </div>
-  <div id="logoutContainer" style="display:none;gap:8px;align-items:center">
-    <button class="outline-btn" onclick="logout()">Logout</button>
-  </div>
+</div>
+<header id="adminTop" class="admin-topbar" style="display:none">
+  <span class="brand"><span class="brand-mark">S</span> SportSphere <span style="color:var(--faint);font-weight:400">/ admin</span></span>
+  <button class="ghost-btn" onclick="adminLogout()">logout</button>
 </header>
-
-<main>
-<section id="home" class="hero">
-  <div class="hero-inner reveal">
-    <div class="eyebrow"><span class="tick"></span>sports subscription management</div>
-    <h1>Train smarter,<br><span class="serif">play harder.</span></h1>
-    <p class="lede">One platform for athletes, sports programs, subscriptions and payments.</p>
-    <div class="hero-actions">
-      <a href="#programs" class="primary-btn">Explore programs</a>
-      <a href="#sports" class="text-btn">View sports →</a>
-    </div>
-  </div>
-</section>
-
-<section class="metrics reveal">
-  <div><b>19</b><span>Athletes</span></div>
-  <div><b>10</b><span>Sports</span></div>
-  <div><b>20</b><span>Programs</span></div>
-  <div><b>10</b><span>Active subscriptions</span></div>
-</section>
-
-<section id="sports" class="section">
-  <div class="section-title reveal">
-    <div><div class="eyebrow">DISCOVER</div><h2>Choose your sport</h2></div>
-    <p>Professional and fitness programs designed around your goals.</p>
-  </div>
-  <div class="sports-grid" id="sportGrid"></div>
-</section>
-
-<section id="programs" class="section dark-section">
-  <div class="section-title reveal">
-    <div><div class="eyebrow">TRAINING</div><h2>Available programs</h2></div>
-    <div class="dropdown" id="sportDropdown">
-      <button class="dropdown-btn" onclick="toggleDropdown(event)">
-        <span id="dropdownLabel">Pick a sport</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      <div class="dropdown-menu" id="dropdownMenu"></div>
-    </div>
-  </div>
-  <div class="program-grid" id="programGrid"></div>
-</section>
-
-<section id="venues" class="section">
-  <div class="section-title reveal">
-    <div><div class="eyebrow">FIND US</div><h2>Our venues</h2></div>
-    <p>Hover a gym or a sport to preview it from above, get directions or book a plan.</p>
-  </div>
-  <div class="explore">
-    <div class="explore-list reveal">
-      <div class="explore-label">Gyms</div>
-      <div id="gymList"></div>
-      <div class="explore-label">Sports</div>
-      <div id="sportList"></div>
-    </div>
-    <div class="explore-preview reveal">
-      <h3 id="exName" style="font-family:var(--disp);font-size:30px;font-weight:500;letter-spacing:-.02em;margin:0 0 6px"></h3>
-      <p id="exSub" style="color:var(--muted);font-size:14px;margin:0 0 18px"></p>
-      <div class="sat-wrap">
-        <iframe id="exMap" title="satellite preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        <span class="sat-tag">SATELLITE</span>
-      </div>
-      <div class="explore-actions">
-        <a id="exDir" class="ghost-btn" target="_blank" rel="noopener">Directions</a>
-        <button class="primary-btn" id="exBook" onclick="openBooking()">Book here</button>
-      </div>
-      <div class="panel-card" id="exDetail"></div>
-    </div>
-  </div>
-</section>
-
-<section id="membership" class="section">
-  <div class="eyebrow">MEMBERSHIP</div>
-  <h2>Every sport. Every arena.<br><em>One membership.</em></h2>
-  <p class="sec-sub">Stop buying sessions one by one. One pass unlocks every venue, every coach and every program in the city.</p>
-  <div class="member-card reveal">
-    <div class="member-info">
-      <h3>All-Access</h3>
-      <ul class="member-list">
-        <li>All 10 sports, all venues, all programs</li>
-        <li>6 premium partner gyms included</li>
-        <li>Priority booking for peak-hour slots</li>
-        <li>1 personal training session every month</li>
-        <li>Pause anytime, no lock-in</li>
-      </ul>
-    </div>
-    <div class="member-buy">
-      <p class="member-price">₹20,000<span>/month</span></p>
-      <button class="primary-btn" onclick="goSubscribe()">Get All-Access →</button>
-      <p class="member-note">or pick a focused plan below</p>
-    </div>
-  </div>
-  <div id="planGrid" style="margin-top:16px;display:grid;gap:14px"></div>
-</section>
-
-</main>
-
-<footer class="reveal"><span>© 2026 SportSphere</span><span id="ftContact">Sports Subscription Management</span></footer>
-
-<div class="modal" id="bookModal">
-  <div class="modal-box book-box">
-    <button class="close" onclick="closeBook()">×</button>
-    <div class="eyebrow">BOOK A PROGRAM</div>
-    <h2 id="bkPlace"></h2>
-    <p class="book-contact" id="bkContact"></p>
-    <div class="book-sports" id="bkSports"></div>
-    <div id="bkPrograms"></div>
-    <div class="book-total"><span id="bkTotalLabel">Select a program</span><b id="bkPrice"></b></div>
-    <button class="primary-btn book-go" id="bkGo" onclick="bookContinue()" disabled>Continue →</button>
-  </div>
-</div>
-
-<div class="modal" id="programModal">
-  <div class="modal-box">
-    <button class="close" onclick="closeProgram()">×</button>
-    <div class="eyebrow" id="pmTag">PROGRAM</div>
-    <h2 id="pmName"></h2>
-    <p class="book-contact" id="pmPlace"></p>
-    <p class="book-contact" id="pmContact"></p>
-    <div class="pm-rows" id="pmRows"></div>
-    <button class="primary-btn book-go" onclick="bookProgramDirect()">Book this program →</button>
-  </div>
-</div>
-
-<!-- qr modal -->
-<div class="modal" id="qrModal">
-  <div class="modal-box">
-    <button class="modal-x" onclick="closeQr()">✕</button>
-    <div class="eyebrow">SPORTSPHERE PASS</div>
-    <h2 id="qrTitle">booking pass</h2>
-    <div class="qr-frame"><div id="qrBox"></div></div>
-    <p class="book-contact" id="qrCaption" style="text-align:center;margin-top:14px"></p>
-    <button class="primary-btn book-go" style="margin-top:8px" onclick="closeQr()">Done</button>
-  </div>
-</div>
-<div class="modal" id="checkoutModal">
-  <div class="modal-box">
-    <button class="close" onclick="closeCheckout()">×</button>
-    <div id="coMain">
-      <div class="eyebrow">CHECKOUT</div>
-      <h2 id="coName"></h2>
-      <p class="book-contact" id="coPlace"></p>
-      <div class="pm-rows" id="coRows"></div>
-      <div class="book-total"><span>Total due</span><b id="coTotal"></b></div>
-      <button class="primary-btn book-go" id="coPay" onclick="mockPay()">Pay →</button>
-      <p class="co-note">test checkout — razorpay plugs in here</p>
-    </div>
-    <div id="coDone" style="display:none;text-align:center;padding:16px 0">
-      <div style="font-size:42px;margin-bottom:14px">✓</div>
-      <div class="eyebrow">BOOKING CONFIRMED</div>
-      <h2 style="margin:16px 0 10px">You're in.</h2>
-      <p class="book-contact" id="coDoneText" style="text-align:center"></p>
-      <button class="primary-btn book-go" onclick="closeCheckout()">Done</button>
-      <div><button class="qr-btn" style="margin-top:12px" onclick="showLastQr()">show qr</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="loginModal">
-  <div class="modal-box">
-    <button class="close" onclick="hideLogin()">×</button>
-    <div class="eyebrow">WELCOME BACK</div>
-    <h2 id="authTitle">Login</h2>
-    <div id="googleBtn" style="display:flex;justify-content:center;margin:10px 0"></div>
-    <p style="font-size:12px;opacity:.6;text-align:center">one click login with google, no passwords</p>
-  </div>
-</div>
-
-<div class="modal" id="mfaModal">
-  <div class="modal-box">
-    <div class="eyebrow" id="mfaEyebrow">TWO FACTOR</div>
-    <h2 id="mfaTitle">check your app</h2>
-    <p>enter the 6-digit code from your authenticator app</p>
-    <input id="mfaCodeInput" class="mfa-code-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')submitMfa()">
-    <p id="mfaError" class="mfa-error"></p>
-    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
-      <button class="ghost-btn" onclick="cancelMfa()">cancel</button>
-      <button class="primary-btn" onclick="submitMfa()">verify</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="formModal" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&event.target.tagName!=='SELECT')submitFormModal();if(event.key==='Escape')closeFormModal(null)">
-  <div class="modal-box" style="text-align:left;max-height:88vh;overflow-y:auto">
-    <div class="eyebrow" id="formEyebrow">ADMIN</div>
-    <h2 id="formTitle">form</h2>
-    <div id="formFields" style="display:grid;gap:12px;margin-top:16px"></div>
-    <p id="formError" class="mfa-error"></p>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
-      <button class="ghost-btn" onclick="closeFormModal(null)">cancel</button>
-      <button class="primary-btn" id="formSubmitBtn" onclick="submitFormModal()">save</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="confirmModal" onkeydown="if(event.key==='Escape')closeConfirmModal(false)">
-  <div class="modal-box">
-    <div class="eyebrow">ARE YOU SURE</div>
-    <h2 id="confirmTitle">delete this?</h2>
-    <p id="confirmMsg" style="margin-top:8px"></p>
-    <div style="display:flex;gap:10px;justify-content:center;margin-top:20px">
-      <button class="ghost-btn" onclick="closeConfirmModal(false)">cancel</button>
-      <button class="primary-btn" id="confirmYesBtn" onclick="closeConfirmModal(true)">delete</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<!-- portals -->
-<section id="userPortal" class="portal-section">
-  <div class="portal-head">
-    <div>
-      <span class="eyebrow">member area</span>
-      <h2>user portal</h2>
-      <p>Manage your profile, subscriptions, schedule and invoices.</p>
-    </div>
-    <button class="close-portal" onclick="closePortals()">back to site</button>
-  </div>
-
-  <div class="portal-grid">
-    <aside class="portal-sidebar">
-      <button class="portal-tab active" onclick="switchUserTab('overview', this)">overview</button>
-      <button class="portal-tab" onclick="switchUserTab('subscriptions', this)">my subscriptions</button>
-      <button class="portal-tab" onclick="switchUserTab('schedule', this)">schedule</button>
-      <button class="portal-tab" onclick="switchUserTab('billing', this)">billing</button>
-      <button class="portal-tab" onclick="switchUserTab('profile', this)">profile</button>
-    </aside>
-
-    <main class="portal-content">
-      <div id="user-overview" class="portal-panel active">
-        <div class="stat-row">
-          <div class="portal-stat"><span>active plans</span><strong>2</strong></div>
-          <div class="portal-stat"><span>upcoming sessions</span><strong>4</strong></div>
-          <div class="portal-stat"><span>pending invoices</span><strong>1</strong></div>
-        </div>
-        <div class="panel-card">
-          <h3 id="userGreeting">welcome back</h3>
-          <p>Your sports memberships, upcoming training and billing information are available here.</p>
-        </div>
-      </div>
-
-      <div id="user-subscriptions" class="portal-panel">
-        <div class="panel-card">
-          <div class="table-title"><h3>my subscriptions</h3></div>
-          <div class="portal-table">
-            <div class="table-row table-header"><span>plan</span><span>start</span><span>end</span><span>status</span></div>
-            <div class="table-row"><span>football training</span><span>01 sep 2026</span><span>28 feb 2027</span><span class="badge success">active</span></div>
-            <div class="table-row"><span>athletics fitness</span><span>01 sep 2026</span><span>28 nov 2026</span><span class="badge success">active</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div id="user-schedule" class="portal-panel">
-        <div class="panel-card">
-          <h3>upcoming schedule</h3>
-          <div class="schedule-list">
-            <div><strong>football training</strong><span>monday · 18:00–20:00 · hyderabad sports complex</span></div>
-            <div><strong>athletics fitness</strong><span>friday · 06:30–08:00 · delhi athletics stadium</span></div>
-            <div><strong>cricket academy</strong><span>tuesday · 17:00–19:30 · bangalore cricket ground</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div id="user-billing" class="portal-panel">
-        <div class="panel-card">
-          <h3>billing</h3>
-          <div class="portal-table">
-            <div class="table-row table-header"><span>invoice</span><span>date</span><span>amount</span><span>status</span></div>
-            <div class="table-row"><span>#INV-1001</span><span>01 sep 2026</span><span>₹4,999</span><span class="badge success">paid</span></div>
-            <div class="table-row"><span>#INV-1002</span><span>01 oct 2026</span><span>₹2,499</span><span class="badge pending">pending</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div id="user-profile" class="portal-panel">
-        <div class="panel-card profile-form">
-          <h3>profile</h3>
-          <label>full name<input type="text" value="demo athlete"></label>
-          <label>email<input type="email" value="athlete@example.com"></label>
-          <label>phone<input type="tel" value="+91 98765 43210"></label>
-          <label>location<input type="text" value="hyderabad"></label>
-          <button class="primary-btn" onclick="saveProfile()">save changes</button>
-        </div>
-      </div>
-    </main>
-  </div>
-</section>
-
+<div id="adminApp" style="display:none">
 <section id="adminPortal" class="portal-section">
   <div class="portal-head">
     <div>
@@ -684,7 +393,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <h2>admin portal</h2>
       <p>Manage users, programs, subscriptions, invoices and payments.</p>
     </div>
-    <button class="close-portal" onclick="closePortals()">back to site</button>
+    
   </div>
 
   <div class="admin-stats">
@@ -700,8 +409,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="admin-tab" onclick="switchAdminTab('users', this)">users</button>
       <button class="admin-tab" onclick="switchAdminTab('programs', this)">programs</button>
       <button class="admin-tab" onclick="switchAdminTab('subscriptions', this)">subscriptions</button>
-      <button class="admin-tab" onclick="switchAdminTab('billing', this)">billing</button>
-      <button class="admin-tab" onclick="switchAdminTab('content', this)">site content</button>
+      <button class="admin-tab" onclick="switchAdminTab('venues', this)">venues</button>
     </aside>
 
     <main class="portal-content">
@@ -732,106 +440,67 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
 
       <div id="admin-subscriptions" class="admin-panel">
         <div class="panel-card">
-          <h3>subscriptions</h3>
-          <div class="portal-table"><div class="table-row"><span>loading subscriptions…</span></div></div>
-        </div>
-      </div>
-
-      <div id="admin-billing" class="admin-panel">
-        <div class="panel-card">
-          <div class="table-title"><h3>invoices & payments</h3><button class="small-btn" onclick="exportCSV()">export csv</button></div>
-          <div class="portal-table"><div class="table-row"><span>loading invoices…</span></div></div>
-        </div>
-      </div>
-
-      <div id="admin-content" class="admin-panel">
-        <div class="panel-card">
           <div class="table-title"><h3>subscription plans</h3><button class="small-btn" onclick="addPlan()">+ add plan</button></div>
           <div class="portal-table" id="adminPlansTable"><div class="table-row"><span>loading plans…</span></div></div>
           <p style="font-size:12px;color:var(--faint)">plans show up in the membership section on the site.</p>
         </div>
+        <div class="panel-card">
+          <div class="table-title"><h3>billing</h3><button class="small-btn" onclick="exportCSV()">export csv</button></div>
+          <div class="portal-table" id="adminTxnTable"><div class="table-row"><span>loading transactions…</span></div></div>
+        </div>
+      </div>
+
+      <div id="admin-venues" class="admin-panel">
         <div class="panel-card">
           <div class="table-title"><h3 id="sportsVenuesTitle">sports & venues</h3><button class="small-btn" id="backToSportsBtn" style="display:none" onclick="renderSportsVenues()">← all sports</button></div>
           <div id="sportsVenuesBody"><div class="table-row"><span>loading…</span></div></div>
         </div>
       </div>
 </section>
-
-<!-- AI Assistant Widget -->
-<div id="ai-widget">
-  <div class="chat-window" id="aiChatWindow">
-    <div class="chat-header">
-      <b>✨ ask for help</b>
-      <button class="close" onclick="toggleChat()" style="position:static; font-size:22px; padding:0;">×</button>
-    </div>
-    <div class="chat-messages" id="aiMessages">
-      <div class="msg bot">hey, need a hand? ask me about sports, venues, plans or billing and ill point you to the right place.</div>
-    </div>
-    <div class="chat-input-area">
-      <input type="text" id="aiInput" placeholder="Ask about programs..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeypress="if(event.key==='Enter') sendAiMessage()">
-      <button onclick="sendAiMessage()">→</button>
+</div>
+<div class="modal-box">
+    <div class="eyebrow" id="mfaEyebrow">TWO FACTOR</div>
+    <h2 id="mfaTitle">check your app</h2>
+    <p>enter the 6-digit code from your authenticator app</p>
+    <input id="mfaCodeInput" class="mfa-code-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')submitMfa()">
+    <p id="mfaError" class="mfa-error"></p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+      <button class="ghost-btn" onclick="cancelMfa()">cancel</button>
+      <button class="primary-btn" onclick="submitMfa()">verify</button>
     </div>
   </div>
-  <button class="chat-btn" onclick="toggleChat()">✨ ask for help</button>
 </div>
 
-<!-- gym portal -->
-<section id="gymPortal" class="portal-section">
-  <div class="portal-head">
-    <div>
-      <span class="eyebrow">venue owner area</span>
-      <h2>gym portal</h2>
-      <p>Manage your venues, programs, members and revenue.</p>
+<div class="modal" <div class="modal-box" style="text-align:left;max-height:88vh;overflow-y:auto">
+    <div class="eyebrow" id="formEyebrow">ADMIN</div>
+    <h2 id="formTitle">form</h2>
+    <div id="formFields" style="display:grid;gap:12px;margin-top:16px"></div>
+    <p id="formError" class="mfa-error"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="ghost-btn" onclick="closeFormModal(null)">cancel</button>
+      <button class="primary-btn" id="formSubmitBtn" onclick="submitFormModal()">save</button>
     </div>
-    <button class="close-portal" onclick="closePortals()">back to site</button>
   </div>
+</div>
 
-  <div class="admin-stats">
-    <div class="portal-stat"><span>my venues</span><strong id="gymStatVenues">-</strong></div>
-    <div class="portal-stat"><span>programs</span><strong id="gymStatPrograms">-</strong></div>
-    <div class="portal-stat"><span>active members</span><strong id="gymStatSubs">-</strong></div>
-    <div class="portal-stat"><span>revenue</span><strong id="gymStatRevenue">-</strong></div>
+<div class="modal" <div class="modal-box">
+    <div class="eyebrow">ARE YOU SURE</div>
+    <h2 id="confirmTitle">delete this?</h2>
+    <p id="confirmMsg" style="margin-top:8px"></p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:20px">
+      <button class="ghost-btn" onclick="closeConfirmModal(false)">cancel</button>
+      <button class="primary-btn" id="confirmYesBtn" onclick="closeConfirmModal(true)">delete</button>
+    </div>
   </div>
+</div>
 
-  <div class="admin-layout">
-    <aside class="portal-sidebar">
-      <button class="admin-tab active" onclick="switchGymTab('overview', this)">overview</button>
-      <button class="admin-tab" onclick="switchGymTab('programs', this)">programs</button>
-      <button class="admin-tab" onclick="switchGymTab('members', this)">members</button>
-      <button class="admin-tab" onclick="switchGymTab('billing', this)">billing</button>
-    </aside>
-
-    <main class="portal-content">
-      <div id="gym-overview" class="admin-panel active">
-        <div class="panel-card"><div class="table-title"><h3>my venues</h3><button class="small-btn" onclick="addGymVenue()">+ add venue</button></div><div class="schedule-list" id="gymVenueList"></div></div>
-      </div>
-      <div id="gym-programs" class="admin-panel">
-        <div class="panel-card">
-          <div class="table-title"><h3>programs & timings</h3><button class="small-btn" onclick="addGymProgram()">+ add program</button></div>
-          <div class="portal-table" id="gymProgramsTable"></div>
-        </div>
-      </div>
-      <div id="gym-members" class="admin-panel">
-        <div class="panel-card"><h3>members</h3><div class="portal-table" id="gymMembersTable"></div></div>
-      </div>
-      <div id="gym-billing" class="admin-panel">
-        <div class="panel-card"><h3>invoices</h3><div class="portal-table" id="gymBillingTable"></div></div>
-      </div>
-    </main>
-  </div>
-</section>
-
+<div <div id="toast"></div>
 <script>
-/* SportSphere frontend - wired to the Node/Express API */
 const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')? 'http://localhost:5000': 'https://dbse-project.onrender.com';
-const GOOGLE_CLIENT_ID = '801493406484-2aat97r0n5i40k7vsv5tj9p0hp91bs8e.apps.googleusercontent.com'; // same client id as backend .env
-
 let jwt = localStorage.getItem('ss_jwt') || null;
 let currentUser = null;
 let sportsData = [], programsData = [], plansData = [], gymsData = [];
-let gymDashboardCache = null;
 let socket = null;
-
 /* ---------- helpers ---------- */
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -858,294 +527,14 @@ async function api(path, opts = {}) {
 }
 const sportIdOf = p => (p.sportId && p.sportId._id) ? p.sportId._id : p.sportId;
 
-/* ---------- catalog ---------- */
-async function loadCatalog() {
-  [sportsData, programsData, plansData, gymsData] = await Promise.all([
-    api('/api/sports'), api('/api/programs'), api('/api/plans'), api('/api/gyms')
-  ]);
-  renderSports(); filterPrograms(); renderPlans(); buildFilter(); renderExplore();
-  loadSiteContent();
-  try {
-    const s = await api('/api/stats');
-    const counts = document.querySelectorAll('.metrics div b');
-    if (counts[0]) counts[0].textContent = s.athletes;
-    if (counts[1]) counts[1].textContent = s.sports;
-    if (counts[2]) counts[2].textContent = s.programs;
-    if (counts[3]) counts[3].textContent = s.activeSubscriptions;
-  } catch (e) { /* backend asleep: keep last numbers */ }
-}
-function renderSports() {
-  document.getElementById('sportGrid').innerHTML = sportsData.map((s, i) => {
-    const c = programsData.filter(p => sportIdOf(p) === s._id).length;
-    return '<div class="sport reveal" style="transition-delay:' + Math.min(i * 60, 540) + 'ms" onclick="selectSport(\'' + s._id + '\')"><div class="icon">' + (s.icon || '🏅') +
-      '</div><h3>' + s.name + '</h3><span>' + c + ' program' + (c === 1 ? '' : 's') + '</span></div>';
-  }).join('');
-}
-function renderPrograms(list) {
-  list = list || programsData;
-  document.getElementById('programGrid').innerHTML = list.map((p, i) => {
-    const sp = p.sportId || {};
-    const tag = sp.name ? ((sp.icon || '') + ' ' + sp.name) : 'General';
-    return '<article class="program reveal" style="transition-delay:' + Math.min(i * 45, 630) + 'ms" onclick="openProgram(\'' + p._id + '\')"><span class="tag">' + tag + '</span>' +
-      '<h3>' + p.name + '</h3><p>⌖ ' + (p.location || '') + '</p>' +
-      '<div class="schedule"><span>' + (p.day || '') + '</span><b>' + (p.startTime || '') + ' – ' + (p.endTime || '') + '</b></div>' +
-      '<div class="pprice">' + inr(p.priceInr) + '<small>' + (p.pricePer || '/month') + '</small></div>' +
-      '<div class="capacity">Capacity: ' + (p.capacity || '-') + ' athletes</div></article>';
-  }).join('');
-}
-let currentSportFilter = '';
-function buildFilter() {
-  const opts = [{ _id: 'gym', name: 'Gym' }, { _id: 'all', name: 'All sports' }].concat(sportsData);
-  document.getElementById('dropdownMenu').innerHTML = opts.map(s =>
-    '<button class="dropdown-item' + (s._id === currentSportFilter ? ' selected' : '') +
-    '" onclick="pickSport(\'' + s._id + '\',\'' + s.name.replace(/'/g, "\\'") + '\')">' + s.name + '</button>'
-  ).join('');
-}
-function toggleDropdown(e) {
-  e.stopPropagation();
-  document.getElementById('sportDropdown').classList.toggle('open');
-}
-function pickSport(id, name) {
-  currentSportFilter = id;
-  document.getElementById('dropdownLabel').textContent = name;
-  document.getElementById('sportDropdown').classList.remove('open');
-  buildFilter();
-  filterPrograms();
-}
-function filterPrograms() {
-  if (!currentSportFilter) {
-    document.getElementById('programGrid').innerHTML = '<p class="program-hint">pick a sport or gym from the dropdown to see programs</p>';
-    return;
-  }
-  renderPrograms(currentSportFilter === 'all' ? programsData : currentSportFilter === 'gym' ? programsData.filter(p => !sportIdOf(p)) : programsData.filter(p => sportIdOf(p) === currentSportFilter));
-}
-function selectSport(id) {
-  const s = sportsData.find(x => x._id === id);
-  pickSport(id, s ? s.name : 'All sports');
-  document.getElementById('programs').scrollIntoView({ behavior: 'smooth' });
-}
-document.addEventListener('click', e => {
-  const dd = document.getElementById('sportDropdown');
-  if (dd && dd.classList.contains('open') && !dd.contains(e.target)) dd.classList.remove('open');
-});
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { const dd = document.getElementById('sportDropdown'); if (dd) dd.classList.remove('open'); }
-});
-function renderPlans() {
-  const grid = document.getElementById('planGrid');
-  if (!grid) return;
-  grid.innerHTML = (plansData || []).filter(p => (p.name || '').trim().toLowerCase() !== 'all-access').map(p =>
-    '<div class="member-card"><div class="member-info"><h3>' + p.name + '</h3>' +
-    '<p class="sec-sub">' + (p.description || '') + '</p></div>' +
-    '<div class="member-buy"><p class="member-price">\u20b9' + Number(p.priceInr || 0).toLocaleString('en-IN') +
-    '<span>/' + (p.billingCycle || 'month') + '</span></p>' +
-    '<button class="primary-btn" onclick="choosePlan(\'' + p._id + '\')">choose plan \u2192</button></div></div>'
-  ).join('');
-}
-function goSubscribe() {
-  const all = plansData.find(p => (p.name || '').trim().toLowerCase() === 'all-access') || plansData[0];
-  if (all) choosePlan(all._id);
-  else showToast('membership loading, try again in a moment');
-}
-
-/* ---------- google login ---------- */
-function showLogin() {
-  document.getElementById('loginModal').classList.add('show');
-  initGoogleBtn();
-}
-function hideLogin() { document.getElementById('loginModal').classList.remove('show'); }
-let googleInit = false;
-function initGoogleBtn() {
-  if (googleInit) return;
-  if (typeof google === 'undefined' || GOOGLE_CLIENT_ID === 'CHANGE_ME') {
-    document.getElementById('googleBtn').innerHTML =
-      '<p style="font-size:12px;opacity:.7">add your google client id at the top of the script to enable login</p>';
-    return;
-  }
-  googleInit = true;
-  google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogle });
-  google.accounts.id.renderButton(document.getElementById('googleBtn'), { theme: 'outline', size: 'large', width: 320 });
-}
-async function onGoogle(resp) {
-  try {
-    const data = await api('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken: resp.credential }) });
-    if (data.mfaRequired) { hideLogin(); return verifyMfa(data.tempToken); }
-    jwt = data.token; currentUser = data.user;
-    localStorage.setItem('ss_jwt', jwt);
-    hideLogin();
-    updateNavState(currentUser.role);
-    greetUser(currentUser.fullName);
-    showToast('welcome, ' + currentUser.fullName.split(' ')[0]);
-  } catch (e) { showToast(e.message); }
-}
-async function restoreSession() {
-  if (!jwt) return;
-  try {
-    currentUser = await api('/api/auth/me');
-    updateNavState(currentUser.role);
-    greetUser(currentUser.fullName);
-  } catch (e) { if (e.status === 401 || e.status === 403) logout(true); }
-}
-function updateNavState(role) {
-  document.getElementById('authContainer').style.display = 'none';
-  document.getElementById('logoutContainer').style.display = 'flex';
-  document.getElementById('gymPortalBtn').style.display = role === 'gym' ? 'inline-block' : 'none';
-  document.getElementById('userPortalBtn').style.display = role === 'athlete' ? 'inline-block' : 'none';
-}
-function logout(silent) {
-  jwt = null; currentUser = null;
-  localStorage.removeItem('ss_jwt');
-  if (socket) { socket.disconnect(); socket = null; }
-  document.getElementById('authContainer').style.display = 'flex';
-  document.getElementById('logoutContainer').style.display = 'none';
-  document.getElementById('gymPortalBtn').style.display = 'none';
-  document.getElementById('userPortalBtn').style.display = 'none';
-  closePortals();
-  if (!silent) showToast('logged out');
-}
-function greetUser(name) {
-  const first = (name || '').trim().split(' ')[0];
-  if (first) document.getElementById('userGreeting').textContent = 'welcome back, ' + first;
-}
-
-/* ---------- subscribe + pay ---------- */
-async function choosePlan(planId) {
-  if (!jwt) { showLogin(); showToast('login with google first'); return; }
-  try {
-    showToast('creating subscription...');
-    const { invoice } = await api('/api/subscriptions', { method: 'POST', body: JSON.stringify({ planId }) });
-    try {
-      const order = await api('/api/payments/order', { method: 'POST', body: JSON.stringify({ invoiceId: invoice._id }) });
-      openRazorpay(order, invoice._id);
-    } catch (e) {
-      showToast('razorpay keys missing on server, test checkout');
-      openMockPlanCheckout(invoice); // razorpay keys missing -> same mock popup as program bookings
-    }
-  } catch (e) { showToast(e.message); }
-}
-let coPlan = null;
-function openMockPlanCheckout(invoice) {
-  coProgId = null; coPlan = { name: 'All-Access' };
-  closeBook();
-  document.getElementById('coName').textContent = 'All-Access';
-  document.getElementById('coPlace').textContent = '⌖ every venue, every program';
-  document.getElementById('coRows').innerHTML =
-    '<div class="pm-row"><span>Plan</span><span>All-Access</span></div>' +
-    '<div class="pm-row"><span>Billing</span><span>monthly</span></div>';
-  document.getElementById('coTotal').textContent = inr(invoice.amountInr) + '/month';
-  const payBtn = document.getElementById('coPay');
-  payBtn.innerHTML = 'Pay ' + inr(invoice.amountInr) + ' →';
-  payBtn.setAttribute('onclick', 'mockPay()');
-  payBtn.disabled = false;
-  document.getElementById('coMain').style.display = '';
-  document.getElementById('coDone').style.display = 'none';
-  document.getElementById('checkoutModal').classList.add('show');
-}
-function openRazorpay(order, invoiceId, onSuccess) {
-  const rzp = new Razorpay({
-    key: order.keyId,
-    order_id: order.orderId,
-    currency: 'INR',
-    name: 'SportSphere',
-    description: 'subscription payment (test mode)',
-    handler: async function (resp) {
-      try {
-        await api('/api/payments/verify', {
-          method: 'POST',
-          body: JSON.stringify({
-            invoiceId,
-            orderId: resp.razorpay_order_id,
-            paymentId: resp.razorpay_payment_id,
-            signature: resp.razorpay_signature
-          })
-        });
-        if (onSuccess) onSuccess();
-        else { showToast('payment successful, plan activated'); refreshUserPortal(); }
-      } catch (e) { showToast(e.message); }
-    }
-  });
-  rzp.open();
-}
-
-/* ---------- user portal ---------- */
-async function refreshUserPortal() {
-  if (!currentUser || currentUser.role === 'admin') return;
-  try {
-    const [subs, invoices, bookings] = await Promise.all([api('/api/subscriptions/mine'), api('/api/invoices/mine'), api('/api/bookings/mine')]);
-    const active = subs.filter(s => s.status === 'active');
-    const pending = invoices.filter(i => i.status === 'pending' || i.status === 'overdue');
-
-    const stats = document.querySelectorAll('#user-overview .portal-stat strong');
-    if (stats[0]) stats[0].textContent = active.length;
-    if (stats[1]) stats[1].textContent = bookings.filter(b => b.status === 'confirmed').length;
-    if (stats[2]) stats[2].textContent = pending.length;
-
-    document.querySelector('#user-subscriptions .portal-table').innerHTML =
-      '<div class="table-row table-header"><span>plan</span><span>program</span><span>end</span><span>status</span><span>qr</span></div>' +
-      (window._subs = subs, subs.map((s, i) => {
-        const daysLeft = Math.max(0, Math.ceil((new Date(s.endDate) - Date.now()) / 86400000));
-        const paid = s.status === 'active';
-        return '<div class="table-row"><span>' + (s.planId ? s.planId.name : '-') + '</span><span>' +
-        (s.programId ? s.programId.name : 'any program') + '</span><span>' + daysLeft + ' days left</span>' + badge(s.status) +
-        '<span>' + (paid ? '<button class="qr-btn" onclick="showSubQr(' + i + ')">show qr</button>' : '') + '</span></div>';
-      }).join('') || '<div class="table-row"><span>no subscriptions yet</span><span></span><span></span><span></span><span></span></div>');
-
-    document.querySelector('#user-billing .portal-table').innerHTML =
-      '<div class="table-row table-header"><span>invoice</span><span>date</span><span>amount</span><span>status</span></div>' +
-      (invoices.map(i =>
-        '<div class="table-row"><span>#INV-' + shortId(i._id) + '</span><span>' + fmtDate(i.issuedAt) + '</span><span>' +
-        inr(i.amountInr) + '</span>' + badge(i.status) + '</div>'
-      ).join('') || '<div class="table-row"><span>no invoices yet</span><span></span><span></span><span></span></div>');
-
-    document.querySelector('#user-schedule .schedule-list').innerHTML =
-      (window._bookings = bookings.filter(b => b.status === 'confirmed'), window._bookings.map((b, i) => {
-        const periodDays = (b.programId && b.programId.pricePer === '/year') ? 365 : 30;
-        const daysLeft = Math.max(0, Math.ceil((new Date(b.createdAt).getTime() + periodDays * 86400000 - Date.now()) / 86400000));
-        return '<div><strong>' + (b.programId ? b.programId.name : 'program') + '</strong><span>' + (b.slot || '') +
-        ' · ref ' + b.bookingRef + ' · ' + daysLeft + ' days left</span>' +
-        ' <button class="qr-btn" onclick="showBookingQr(' + i + ')">show qr</button></div>';
-      }).join('') +
-      active.filter(s => s.programId).map(s => {
-        const daysLeft = Math.max(0, Math.ceil((new Date(s.endDate) - Date.now()) / 86400000));
-        return '<div><strong>' + s.programId.name + '</strong><span>' + (s.programId.day || '') + ' · ' +
-        (s.programId.startTime || '') + '–' + (s.programId.endTime || '') + ' · ' + (s.programId.location || '') +
-        ' · ' + daysLeft + ' days left</span></div>';
-      }).join('')) || '<div><strong>no sessions scheduled</strong><span>book a program or subscribe to a plan</span></div>';
-
-    fillProfile();
-  } catch (e) { console.warn('user portal refresh failed', e.message); }
-}
-function fillProfile() {
-  if (!currentUser) return;
-  const inputs = document.querySelectorAll('#user-profile input');
-  if (inputs[0]) inputs[0].value = currentUser.fullName || '';
-  if (inputs[1]) inputs[1].value = currentUser.email || '';
-  if (inputs[2]) inputs[2].value = currentUser.phone || '';
-  if (inputs[3]) inputs[3].value = currentUser.location || '';
-}
-async function saveProfile() {
-  const btn = document.querySelector('#user-profile .primary-btn');
-  const inputs = document.querySelectorAll('#user-profile input');
-  btn.disabled = true; btn.textContent = 'saving…';
-  try {
-    const updated = await api('/api/auth/me', { method: 'PATCH',
-      body: JSON.stringify({
-        fullName: inputs[0] ? inputs[0].value : '',
-        phone: inputs[2] ? inputs[2].value : '',
-        location: inputs[3] ? inputs[3].value : '' }) });
-    currentUser = updated; greetUser(currentUser.fullName); fillProfile();
-    showToast('profile saved');
-  } catch (e) { showToast(e.message); }
-  btn.disabled = false; btn.textContent = 'save changes';
-}
 
 /* ---------- admin portal ---------- */
 async function refreshAdmin() {
   if (!currentUser || currentUser.role !== 'admin') return;
   try {
-    const [stats, users, subs, invoices] = await Promise.all([
+    const [stats, users, txns] = await Promise.all([
       api('/api/admin/stats'), api('/api/admin/users'),
-      api('/api/admin/subscriptions'), api('/api/admin/invoices')
+      api('/api/admin/transactions')
     ]);
     const boxes = document.querySelectorAll('#adminPortal .portal-stat strong');
     const smalls = document.querySelectorAll('#adminPortal .portal-stat small');
@@ -1162,17 +551,24 @@ async function refreshAdmin() {
         '<div class="table-row"><span>' + u.fullName + '</span><span>' + u.email + '</span><span>' + badge(u.role) +
         '</span><span>' + fmtDate(u.createdAt) + '</span></div>').join('');
 
-    document.querySelector('#admin-subscriptions .portal-table').innerHTML =
-      '<div class="table-row cols5 table-header"><span>subscription</span><span>user</span><span>plan</span><span>program</span><span>status</span></div>' +
-      subs.slice(0, 30).map(s =>
-        '<div class="table-row cols5"><span>#SUB-' + shortId(s._id) + '</span><span>' + (s.userId ? s.userId.email : '-') +
-        '</span><span>' + (s.planId ? s.planId.name : '-') + '</span><span>' + (s.programId ? s.programId.name : '-') + '</span>' + badge(s.status) + '</div>').join('');
-
-    renderAdminInvoices(invoices);
+    renderAdminTransactions(txns);
     renderAdminPrograms();
     refreshMfaStatus();
     refreshSiteContent();
   } catch (e) { console.warn('admin refresh failed', e.message); }
+}
+function renderAdminTransactions(txns) {
+  const el = document.getElementById('adminTxnTable');
+  if (!el) return;
+  const rows = (txns || []).slice(0, 50).map(t =>
+    '<div class="table-row cols8"><span>' + fmtDate(t.date) + '</span><span>#PAY-' + t.payment_id + '</span>' +
+    '<span>' + t.athlete + '<br><small style="color:var(--faint)">' + t.email + '</small></span>' +
+    '<span>#' + t.invoice_id + '</span><span>' + t.plan + '</span><span>' + inr(t.amount_in) + '</span>' +
+    '<span>' + t.method + (t.txn_ref && t.txn_ref !== '-' ? '<br><small style="color:var(--faint)">' + t.txn_ref + '</small>' : '') + '</span>' +
+    badge(t.status) + '</div>').join('');
+  el.innerHTML =
+    '<div class="table-row cols8 table-header"><span>date</span><span>payment</span><span>athlete</span><span>invoice</span><span>plan</span><span>amount</span><span>method</span><span>status</span></div>' +
+    (rows || '<div class="table-row"><span>no transactions yet</span></div>');
 }
 /* ---------- admin mfa (totp: google authenticator / duo / proton auth) ---------- */
 /* ---------- mfa login modal (replaces the native prompt) ---------- */
@@ -1213,10 +609,7 @@ async function submitMfa() {
     jwt = data.token;
     currentUser = data.user;
     localStorage.setItem('ss_jwt', jwt);
-    updateNavState(currentUser.role);
-    greetUser(currentUser.fullName);
-    showToast('welcome, ' + currentUser.fullName.split(' ')[0]);
-    if (mfaMode === 'direct') showPortal('admin');
+    onAdminLogin();
   } catch (e) {
     mfaAttempts++;
     if (mfaAttempts >= 3) { closeMfaModal(); showToast('too many wrong codes, try again'); }
@@ -1240,6 +633,9 @@ function openFormModal(opts) {
           '<option value="' + esc(o.value) + '"' + (String(o.value) === String(f.value == null ? '' : f.value) ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
       } else if (f.type === 'textarea') {
         input = '<textarea id="ff' + i + '" rows="3" placeholder="' + esc(f.placeholder) + '">' + esc(f.value) + '</textarea>';
+      } else if (f.type === 'placesearch') {
+        input = '<input id="ff' + i + '" type="text" value="' + esc(f.value) + '" placeholder="' + esc(f.placeholder) + '" autocomplete="off" oninput="placeSearch(' + i + ', this.value)">' +
+          '<div class="place-sugg" id="ffsugg' + i + '"></div>';
       } else {
         input = '<input id="ff' + i + '" type="' + esc(f.type || 'text') + '" value="' + esc(f.value) + '" placeholder="' + esc(f.placeholder) + '"' + (f.inputmode ? ' inputmode="' + esc(f.inputmode) + '"' : '') + '>';
       }
@@ -1253,6 +649,43 @@ function closeFormModal(result) {
   document.getElementById('formModal').classList.remove('show');
   const r = formResolve; formResolve = null; formFields = [];
   if (r) r(result);
+}
+/* ---------- place search (nominatim, no api key). pick a suggestion ->
+   lat/lng autofill, google embed auto-builds from lat/lng on the site ---------- */
+let placeSearchTimer = null;
+function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+async function placeSearch(idx, q) {
+  const box = document.getElementById('ffsugg' + idx);
+  if (!box) return;
+  clearTimeout(placeSearchTimer);
+  q = (q || '').trim();
+  if (q.length < 3) { box.innerHTML = ''; return; }
+  placeSearchTimer = setTimeout(async () => {
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&q=' + encodeURIComponent(q));
+      const arr = await r.json();
+      box.innerHTML = arr.map(p => {
+        const label = p.display_name.split(',').slice(0, 3).join(',');
+        return '<button type="button" onclick="pickPlace(' + idx + ', this)" data-lat="' + p.lat + '" data-lon="' + p.lon +
+          '" data-name="' + escAttr(p.name || label) + '"><span>' + escAttr(label) + '</span>' +
+          '<small>' + escAttr(p.type || 'place') + ' · ' + String(p.lat).slice(0, 7) + ', ' + String(p.lon).slice(0, 7) + '</small></button>';
+      }).join('') || '<p style="font-size:12px;color:var(--faint)">no matches</p>';
+    } catch (e) { box.innerHTML = ''; }
+  }, 400);
+}
+function pickPlace(idx, btn) {
+  const lat = btn.getAttribute('data-lat'), lon = btn.getAttribute('data-lon');
+  const setByKey = (key, val) => {
+    const fi = (formFields || []).findIndex(f => f.key === key);
+    if (fi > -1) { const el = document.getElementById('ff' + fi); if (el) el.value = val; }
+  };
+  setByKey('lat', lat); setByKey('lng', lon);
+  const ni = (formFields || []).findIndex(f => f.key === 'name');
+  const nameEl = ni > -1 ? document.getElementById('ff' + ni) : null;
+  if (nameEl && !nameEl.value.trim()) nameEl.value = btn.getAttribute('data-name') || '';
+  document.getElementById('ffsugg' + idx).innerHTML = '';
+  document.getElementById('ff' + idx).value = btn.getAttribute('data-name') || '';
+  showToast('location set — map auto-embeds from lat/lng');
 }
 function submitFormModal() {
   const err = document.getElementById('formError');
@@ -1427,7 +860,8 @@ function renderSportsVenues() {
   const rows = (sportsData || []).map(s => {
     const sid = String(s._id);
     const progs = (programsData || []).filter(p => sportIdStr(p) === sid);
-    const venueIds = [...new Set(progs.map(progGymIdStr).filter(Boolean))];
+    const gymIds = (gymsData || []).filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === sid; }).map(g => String(g._id));
+    const venueIds = [...new Set([...progs.map(progGymIdStr).filter(Boolean), ...gymIds])];
     return '<div class="table-row"><span>' + s.name + '</span><span>' + venueIds.length + ' venues</span><span>' + progs.length + ' programs</span>' +
       '<span><button class="small-btn" onclick="openSport(\'' + s._id + '\')">venues \u2192</button></span></div>';
   }).join('');
@@ -1441,7 +875,8 @@ function openSport(sportId) {
   document.getElementById('sportsVenuesTitle').textContent = sport ? sport.name + ' venues' : 'venues';
   document.getElementById('backToSportsBtn').style.display = '';
   const progs = (programsData || []).filter(p => sportIdStr(p) === activeSportId);
-  const venueIds = [...new Set(progs.map(progGymIdStr).filter(Boolean))];
+  const gymIds = (gymsData || []).filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === activeSportId; }).map(g => String(g._id));
+  const venueIds = [...new Set([...progs.map(progGymIdStr).filter(Boolean), ...gymIds])];
   const cards = venueIds.map(vid => {
     const g = (gymsData || []).find(x => String(x._id) === vid);
     if (!g) return '';
@@ -1465,6 +900,7 @@ async function editVenue(id) {
   if (!g) return;
   const v = await openFormModal({ eyebrow: 'VENUES', title: 'edit venue', submitText: 'save',
     fields: [
+      { key: '_place', label: 'search place', type: 'placesearch', placeholder: 'type a name to move the pin' },
       { key: 'name', label: 'venue name', required: true, value: g.name },
       { key: 'area', label: 'area', value: g.area },
       { key: 'address', label: 'full address', value: g.address },
@@ -1476,6 +912,7 @@ async function editVenue(id) {
     ] });
   if (!v) return;
   const body = Object.assign({}, v);
+  delete body._place;
   if (body.lat === '') delete body.lat; else body.lat = Number(body.lat);
   if (body.lng === '') delete body.lng; else body.lng = Number(body.lng);
   try {
@@ -1489,6 +926,7 @@ async function addVenue() {
   const sports = (sportsData || []).map(s => ({ value: String(s._id), label: s.name }));
   const v = await openFormModal({ eyebrow: 'VENUES', title: 'new venue', submitText: 'add venue',
     fields: [
+      { key: '_place', label: 'search place', type: 'placesearch', placeholder: 'type a name for suggestions, e.g. fitness plus gym' },
       ...(sports.length > 1 ? [{ key: '_sport', label: 'sport', type: 'select', options: sports, value: activeSportId || sports[0].value }] : []),
       { key: 'name', label: 'venue name', required: true, placeholder: 'e.g. Skykings Arena' },
       { key: 'area', label: 'place / area', placeholder: 'e.g. Kondapur' },
@@ -1500,7 +938,8 @@ async function addVenue() {
       { key: 'mapEmbedUrl', label: 'google maps embed link', placeholder: 'empty = auto map from lat/lng' }
     ] });
   if (!v) return;
-  delete v._sport;
+  if (v._sport) v.sportId = v._sport;
+  delete v._sport; delete v._place;
   if (v.lat === '') delete v.lat; else v.lat = Number(v.lat);
   if (v.lng === '') delete v.lng; else v.lng = Number(v.lng);
   try {
@@ -1516,19 +955,6 @@ async function delPlan(id) {
     await api('/api/admin/plans/' + id, { method: 'DELETE' });
     plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan deleted');
   } catch (e) { showToast(e.message); }
-}
-function renderAdminInvoices(invoices) {
-  document.querySelector('#admin-billing .portal-table').innerHTML =
-    '<div class="table-row table-header"><span>invoice</span><span>user</span><span>amount</span><span>status</span></div>' +
-    invoices.slice(0, 30).map(i =>
-      '<div class="table-row"><span>#INV-' + shortId(i._id) + '</span><span>' +
-      (i.subscriptionId && i.subscriptionId.userId ? i.subscriptionId.userId.email : '-') + '</span><span>' +
-      inr(i.amountInr) + '</span>' + badge(i.status) + '</div>').join('');
-}
-async function refreshAdminBilling() {
-  if (!currentUser || currentUser.role !== 'admin') return;
-  try { renderAdminInvoices(await api('/api/admin/invoices')); }
-  catch (e) { console.warn('billing refresh failed', e.message); }
 }
 function exportCSV() {
   window.location = API + '/api/admin/export/transactions?token=' + encodeURIComponent(jwt);
@@ -1566,546 +992,48 @@ async function addProgram() {
 function connectRealtime() {
   if (socket || !jwt || !currentUser || currentUser.role !== 'admin' || typeof io === 'undefined') return;
   socket = io(API, { auth: { token: jwt } });
-  socket.on('invoice:created', () => { showToast('new invoice created'); refreshAdminBilling(); });
-  socket.on('invoice:updated', () => { showToast('invoice updated'); refreshAdminBilling(); });
+  socket.on('invoice:created', () => { showToast('new invoice created'); refreshAdmin(); });
+  socket.on('invoice:updated', () => { showToast('invoice updated'); refreshAdmin(); });
 }
 
-/* ---------- booking modal ---------- */
-let bookPrograms = [], bookSportSel = null, bookProgSel = null;
-function openBooking() {
-  if (!currentExplore.id && gymsData.length) currentExplore = { kind: 'gym', id: gymsData[0]._id };
-  const { kind, id } = currentExplore;
-  let placeName = '', contact = '';
-  if (kind === 'gym') {
-    const g = gymById(id); if (!g) return;
-    placeName = g.name;
-    contact = [g.phone, g.email].filter(Boolean).join(' · ');
-    bookPrograms = programsData.filter(p => String((p.gymId && p.gymId._id) || p.gymId) === String(id));
-  } else {
-    const s = sportsData.find(x => String(x._id) === String(id)); if (!s) return;
-    placeName = (s.icon || '') + ' ' + s.name;
-    const v = sportVenue(id);
-    if (v) contact = [v.phone, v.email].filter(Boolean).join(' · ');
-    bookPrograms = programsData.filter(p => sportIdOf(p) === String(id));
-  }
-  if (!bookPrograms.length) { toast('no programs listed here yet'); return; }
-  document.getElementById('bkPlace').textContent = placeName;
-  document.getElementById('bkContact').textContent = contact;
-  const sports = [...new Set(bookPrograms.map(p => sportNameOf(p)))];
-  bookSportSel = sports[0]; bookProgSel = null;
-  document.getElementById('bkSports').innerHTML = sports.length > 1
-    ? sports.map(s => '<button class="book-sport' + (s === bookSportSel ? ' active' : '') + '" onclick="pickBookSport(\'' + s.replace(/'/g, "\\'") + '\')">' + s + '</button>').join('')
-    : '<span style="font-size:13px;color:var(--faint)">' + sports[0] + '</span>';
-  renderBookPrograms();
-  document.getElementById('bookModal').classList.add('show');
-}
-function pickBookSport(s) {
-  bookSportSel = s; bookProgSel = null;
-  document.querySelectorAll('.book-sport').forEach(b => b.classList.toggle('active', b.textContent === s));
-  renderBookPrograms();
-}
-function renderBookPrograms() {
-  const list = bookPrograms.filter(p => sportNameOf(p) === bookSportSel);
-  if (!bookProgSel || !list.find(p => String(p._id) === String(bookProgSel))) bookProgSel = list.length ? list[0]._id : null;
-  document.getElementById('bkPrograms').innerHTML = list.map(p =>
-    '<button class="book-prog' + (String(p._id) === String(bookProgSel) ? ' active' : '') + '" onclick="pickBookProg(\'' + p._id + '\')">' +
-    '<span style="text-align:left"><strong>' + p.name + '</strong><span>' + venueNameOf(p) + ' · ' + (p.day || '') + ' ' + (p.startTime || '') + '–' + (p.endTime || '') + '</span></span>' +
-    '<b>' + inr(p.priceInr) + '<small>' + (p.pricePer || '/month') + '</small></b></button>').join('');
-  updateBookTotal();
-}
-function pickBookProg(id) {
-  bookProgSel = id;
-  document.querySelectorAll('.book-prog').forEach(b => b.classList.toggle('active', b.getAttribute('onclick').includes("'" + id + "'")));
-  updateBookTotal();
-}
-function updateBookTotal() {
-  const p = bookPrograms.find(x => String(x._id) === String(bookProgSel));
-  document.getElementById('bkTotalLabel').textContent = p ? p.name + ' · ' + sportNameOf(p) : 'Select a program';
-  document.getElementById('bkPrice').textContent = p ? inr(p.priceInr) + (p.pricePer || '/month') : '';
-  document.getElementById('bkGo').disabled = !p;
-}
-function closeBook() { document.getElementById('bookModal').classList.remove('show'); }
-async function payForProgram() {
-  if (!jwt) { showLogin(); showToast('login with google first'); return; }
-  const btn = document.getElementById('coPay');
-  btn.disabled = true; btn.textContent = 'processing…';
-  try {
-    const p = bookPrograms.find(x => String(x._id) === String(coProgId));
-    const slot = p ? ((p.day || '') + ' ' + (p.startTime || '') + ' – ' + (p.endTime || '')) : '';
-    const { booking, invoice } = await api('/api/bookings', { method: 'POST',
-      body: JSON.stringify({ programId: coProgId, slot }) });
-    const label = p ? p.name + ' · ' + venueNameOf(p) : 'program';
-    const showDone = (ref) => {
-      document.getElementById('coDoneText').textContent = label + ' — booking ref ' + ref + ' (test mode)';
-      lastQr = { title: 'booking pass',
-        payload: 'SPORTSPHERE BOOKING\nProgram: ' + (p ? p.name : 'program') + '\nSlot: ' + slot + '\nRef: ' + ref,
-        caption: label + ' — booking ref ' + ref };
-      document.getElementById('coMain').style.display = 'none';
-      document.getElementById('coDone').style.display = '';
-    };
-    try {
-      const order = await api('/api/payments/order', { method: 'POST', body: JSON.stringify({ invoiceId: invoice._id }) });
-      openRazorpay(order, invoice._id, () => showDone(booking.bookingRef));
-    } catch (e) {
-      showToast('razorpay keys missing on server, test checkout');
-      const done = await api('/api/bookings/' + booking._id + '/confirm', { method: 'POST' });
-      showDone(done.bookingRef);
-    }
-  } catch (e) {
-    btn.disabled = false; btn.innerHTML = 'try again →';
-    showToast(e.message);
-  }
-}
 
-/* ---------- mock checkout (razorpay plugs in here later) ---------- */
-let coProgId = null;
-function bookContinue() {
-  const p = bookPrograms.find(x => String(x._id) === String(bookProgSel)); if (!p) return;
-  closeBook();
-  coProgId = p._id; coPlan = null;
-  const per = p.pricePer || '/month';
-  const amt = per === '/year' ? p.priceInr : p.priceInr;
-  document.getElementById('coName').textContent = p.name;
-  document.getElementById('coPlace').textContent = '⌖ ' + venueNameOf(p);
-  document.getElementById('coRows').innerHTML =
-    '<div class="pm-row"><span>Program</span><span>' + p.name + '</span></div>' +
-    '<div class="pm-row"><span>Schedule</span><span>' + (p.day || '') + ' ' + (p.startTime || '') + ' – ' + (p.endTime || '') + '</span></div>' +
-    '<div class="pm-row"><span>Billing</span><span>' + (per === '/year' ? 'annual' : 'monthly') + '</span></div>';
-  document.getElementById('coTotal').textContent = inr(amt) + per;
-  const payBtn = document.getElementById('coPay');
-  payBtn.innerHTML = 'Pay ' + inr(amt) + ' →';
-  payBtn.setAttribute('onclick', 'payForProgram()');
-  payBtn.disabled = false;
-  document.getElementById('coMain').style.display = '';
-  document.getElementById('coDone').style.display = 'none';
-  document.getElementById('checkoutModal').classList.add('show');
-}
-function closeCheckout() { document.getElementById('checkoutModal').classList.remove('show'); }
-/* ---------- qr pass ---------- */
-let lastQr = null; // { title, payload, caption }
-function showQr(title, payload, caption) {
-  lastQr = { title, payload, caption };
-  document.getElementById('qrTitle').textContent = title;
-  document.getElementById('qrCaption').textContent = caption || '';
-  const box = document.getElementById('qrBox');
-  box.innerHTML = '';
-  try {
-    const qr = qrcode(0, 'M');
-    qr.addData(payload);
-    qr.make();
-    box.innerHTML = qr.createImgTag(6, 8);
-  } catch (e) {
-    box.innerHTML = '<p style="color:#000">qr failed to render</p>';
-  }
-  closeCheckout();
-  document.getElementById('qrModal').classList.add('show');
-}
-function closeQr() { document.getElementById('qrModal').classList.remove('show'); }
-function showLastQr() { if (lastQr) { const q = lastQr; lastQr = null; showQr(q.title, q.payload, q.caption); } }
-function showBookingQr(i) {
-  const b = (window._bookings || [])[i]; if (!b) return;
-  const progName = b.programId ? b.programId.name : 'program';
-  showQr('booking pass',
-    'SPORTSPHERE BOOKING\nProgram: ' + progName + '\nSlot: ' + (b.slot || '') + '\nRef: ' + b.bookingRef + '\nAmount: Rs.' + b.amountInr,
-    progName + ' — booking ref ' + b.bookingRef);
-}
-function showSubQr(i) {
-  const s = (window._subs || [])[i]; if (!s) return;
-  const planName = s.planId ? s.planId.name : 'plan';
-  const daysLeft = Math.max(0, Math.ceil((new Date(s.endDate) - Date.now()) / 86400000));
-  showQr('membership pass',
-    'SPORTSPHERE SUBSCRIPTION\nPlan: ' + planName + '\nID: ' + String(s._id).slice(-8).toUpperCase() + '\nStatus: ' + s.status + '\nValid: ' + daysLeft + ' days left',
-    planName + ' · ' + daysLeft + ' days left');
-}
-// ===== RAZORPAY INTEGRATION POINT =====
-// mockPay() is a stand-in until razorpay test keys are configured.
-// to go live, replace the setTimeout body below with:
-//   const { invoice } = await api('/api/subscriptions', { method: 'POST', body: JSON.stringify({ programId: coProgId }) });
-//   const order = await api('/api/payments/order', { method: 'POST', body: JSON.stringify({ invoiceId: invoice._id }) });
-//   openRazorpay(order, invoice._id);
-function mockPay() { // plan fallback only (razorpay keys missing): subscription + invoice already in db
-  if (!jwt) { showLogin(); showToast('login with google first'); return; }
-  const btn = document.getElementById('coPay');
-  btn.disabled = true; btn.textContent = 'processing…';
-  setTimeout(() => {
-    const ref = 'SS' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 90 + 10);
-    document.getElementById('coDoneText').textContent =
-      coPlan.name + ' — booking ref ' + ref + ' (test mode)';
-    lastQr = { title: 'membership pass',
-      payload: 'SPORTSPHERE SUBSCRIPTION\nPlan: ' + coPlan.name + '\nRef: ' + ref + '\nValid: 30 days',
-      caption: coPlan.name + ' — booking ref ' + ref };
-    document.getElementById('coMain').style.display = 'none';
-    document.getElementById('coDone').style.display = '';
-  }, 1200);
-}
 
-/* ---------- program detail modal ---------- */
-let pmProgId = null;
-function priceSplit(p) {
-  const per = p.pricePer || '/month';
-  if (per === '/year') return { m: Math.round(p.priceInr / 12), mApprox: true, a: p.priceInr, aApprox: false };
-  return { m: p.priceInr, mApprox: false, a: p.priceInr * 12, aApprox: true };
+/* ---------- admin app boot (mfa code only, no google) ---------- */
+async function loadAdminCatalog() {
+  [sportsData, programsData, plansData, gymsData] = await Promise.all([
+    api('/api/sports'), api('/api/programs'), api('/api/plans'), api('/api/gyms')
+  ]);
 }
-function venueNameOf(p) { const g = gymOfProgram(p); return g ? g.name : (p.location || ''); }
-function openProgram(id) {
-  const p = programsData.find(x => String(x._id) === String(id)); if (!p) return;
-  pmProgId = id;
-  const sp = p.sportId || {};
-  const tag = sp.name ? ((sp.icon || '') + ' ' + sp.name) : 'General';
-  const g = gymOfProgram(p);
-  const pr = priceSplit(p);
-  document.getElementById('pmTag').textContent = tag.toUpperCase();
-  document.getElementById('pmName').textContent = p.name;
-  document.getElementById('pmPlace').textContent = '⌖ ' + venueNameOf(p) + (g && g.area ? ', ' + g.area : '');
-  const contact = g ? [g.phone, g.email].filter(Boolean).join(' · ') : '';
-  document.getElementById('pmContact').textContent = contact;
-  document.getElementById('pmContact').style.display = contact ? '' : 'none';
-  const rows = [
-    ['Schedule', (p.day || '') + ' ' + (p.startTime || '') + ' – ' + (p.endTime || '')],
-    ['Monthly', '<b>' + inr(pr.m) + '<small>/month' + (pr.mApprox ? ' · approx' : '') + '</small></b>'],
-    ['Annual', '<b>' + inr(pr.a) + '<small>/year' + (pr.aApprox ? ' · approx' : '') + '</small></b>'],
-    ['Capacity', (p.capacity || '-') + ' athletes']
-  ];
-  document.getElementById('pmRows').innerHTML = rows.map(r =>
-    '<div class="pm-row"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>').join('');
-  document.getElementById('programModal').classList.add('show');
-}
-function closeProgram() { document.getElementById('programModal').classList.remove('show'); }
-function bookProgramDirect() {
-  const p = programsData.find(x => String(x._id) === String(pmProgId)); if (!p) return;
-  closeProgram();
-  const sid = sportIdOf(p);
-  if (sid) currentExplore = { kind: 'sport', id: String(sid) };
-  else { const g = gymOfProgram(p); if (!g) return; currentExplore = { kind: 'gym', id: String(g._id) }; }
-  openBooking();
-  pickBookProg(pmProgId);
-}
-
-/* ---------- venues explore (updated) ---------- */
-const FEATURED_GYMS = ["Gold's Gym Banjara Hills", "Gold's Gym Himayat Nagar", "F45 Training Basheer Bagh", "F45 Training Madhapur", "Snap Fitness Madhapur", "Anytime Fitness Jubilee Hills"];
-const sportNameOf = p => { const s = sportsData.find(x => String(x._id) === String(sportIdOf(p))); return s ? s.name : 'General training'; };
-let currentExplore = { kind: 'gym', id: null };
-function gymById(id) { return gymsData.find(g => String(g._id) === String(id)); }
-function gymOfProgram(p) { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return gymById(gid); }
-function sportVenue(sportId) { const p = programsData.find(p => sportIdOf(p) === sportId); return p ? gymOfProgram(p) : null; }
-function exploreItem(kind, key, name, sub, i) {
-  return '<button class="explore-item reveal" data-key="' + key + '" style="transition-delay:' + Math.min(i * 35, 420) + 'ms"' +
-    ' onmouseenter="previewPlace(\'' + kind + '\',\'' + key + '\')" onclick="previewPlace(\'' + kind + '\',\'' + key + '\')">' +
-    '<h4>' + name + '</h4><span>' + sub + '</span></button>';
-}
-function renderExplore() {
-  const gyms = FEATURED_GYMS.map(n => gymsData.find(g => g.name === n)).filter(Boolean);
-  document.getElementById('gymList').innerHTML = gyms.map((g, i) => exploreItem('gym', g._id, g.name, g.area || '', i)).join('');
-  document.getElementById('sportList').innerHTML = sportsData.map((s, i) => {
-    const v = sportVenue(s._id);
-    return exploreItem('sport', s._id, (s.icon || '') + ' ' + s.name, v ? v.name : '', i);
-  }).join('');
-  if (gyms[0]) previewPlace('gym', gyms[0]._id);
-}
-function programRows(ps) {
-  return ps.map(p => '<div class="ex-prow"><strong>' + p.name + '</strong><span>' + (p.day || '') + ' · ' + (p.startTime || '') + '–' + (p.endTime || '') + '</span></div>').join('');
-}
-function previewPlace(kind, id) {
-  currentExplore = { kind, id };
-  document.querySelectorAll('.explore-item').forEach(el => el.classList.toggle('active', el.dataset.key === String(id)));
-  let name = '', sub = '', lat = null, lng = null, detail = '', phone = '', email = '';
-  if (kind === 'gym') {
-    const g = gymById(id); if (!g) return;
-    name = g.name; sub = [g.area, g.address].filter(Boolean).join(' · ');
-    lat = g.lat; lng = g.lng; phone = g.phone || ''; email = g.email || '';
-    const ps = programsData.filter(p => { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return String(gid) === String(id); });
-    detail = programRows(ps) || '<p style="opacity:.6;font-size:13px">no programs listed yet</p>';
-  } else {
-    const s = sportsData.find(x => String(x._id) === String(id)); if (!s) return;
-    const v = sportVenue(id);
-    name = (s.icon || '') + ' ' + s.name; sub = v ? ('Flagship venue · ' + v.name) : '';
-    if (v) { lat = v.lat; lng = v.lng; }
-    detail = programRows(programsData.filter(p => sportIdOf(p) === String(id)));
-  }
-  document.getElementById('exName').textContent = name;
-  document.getElementById('exSub').textContent = sub;
-  const contact = [phone, email].filter(Boolean).join(' · ');
-  document.getElementById('exDetail').innerHTML = (contact ? '<p class="ex-contact">' + contact + '</p>' : '') + detail;
-  const q = (lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad');
-  const customEmbed = (kind === 'gym' && gymById(id).mapEmbedUrl) ? gymById(id).mapEmbedUrl : '';
-  document.getElementById('exMap').src = customEmbed || ('https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed');
-  document.getElementById('exDir').href = 'https://www.google.com/maps/dir/?api=1&destination=' + ((lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad'));
-}
-
-/* ---------- gym portal ---------- */
-async function refreshGym() {
-  if (!currentUser || (currentUser.role !== 'gym' && currentUser.role !== 'admin')) return;
-  try {
-    const d = await api('/api/gym/dashboard');
-    gymDashboardCache = d;
-    document.getElementById('gymStatVenues').textContent = d.stats.gyms;
-    document.getElementById('gymStatPrograms').textContent = d.stats.programs;
-    document.getElementById('gymStatSubs').textContent = d.stats.activeSubscriptions;
-    document.getElementById('gymStatRevenue').textContent = inr(d.stats.revenueInr);
-    document.getElementById('gymVenueList').innerHTML = d.gyms.map(g =>
-      '<div><strong>' + g.name + '</strong><span>' + (g.address || '') + (g.phone ? ' · ' + g.phone : '') + '</span></div>'
-    ).join('') || '<div><strong>no venues assigned</strong></div>';
-    document.getElementById('gymProgramsTable').innerHTML =
-      '<div class="table-row table-header"><span>program</span><span>day</span><span>time</span><span>coach</span></div>' +
-      (d.programs.map(p => '<div class="table-row"><span>' + p.name + '</span><span>' + (p.day || '') + '</span><span>' +
-        (p.startTime || '') + '–' + (p.endTime || '') + '</span><span>' + (p.coach || '-') + '</span></div>').join('') ||
-        '<div class="table-row"><span>no programs yet</span><span></span><span></span><span></span></div>');
-    document.getElementById('gymMembersTable').innerHTML =
-      '<div class="table-row table-header"><span>member</span><span>program</span><span>plan</span><span>status</span></div>' +
-      (d.subscriptions.map(s => '<div class="table-row"><span>' + (s.userId ? s.userId.fullName : '-') + '</span><span>' +
-        (s.programId ? s.programId.name : '-') + '</span><span>' + (s.planId ? s.planId.name : '-') + '</span>' + badge(s.status) + '</div>').join('') ||
-        '<div class="table-row"><span>no members yet</span><span></span><span></span><span></span></div>');
-    document.getElementById('gymBillingTable').innerHTML =
-      '<div class="table-row table-header"><span>invoice</span><span>date</span><span>amount</span><span>status</span></div>' +
-      (d.invoices.map(i => '<div class="table-row"><span>#INV-' + shortId(i._id) + '</span><span>' + fmtDate(i.issuedAt) + '</span><span>' +
-        inr(i.amountInr) + '</span>' + badge(i.status) + '</div>').join('') ||
-        '<div class="table-row"><span>no invoices yet</span><span></span><span></span><span></span></div>');
-  } catch (e) { showToast(e.message); }
-}
-function switchGymTab(tab, btn) {
-  document.querySelectorAll('#gymPortal .admin-panel').forEach(x => x.classList.remove('active'));
-  document.getElementById('gym-' + tab).classList.add('active');
-  document.querySelectorAll('#gymPortal .admin-tab').forEach(x => x.classList.remove('active'));
-  btn.classList.add('active');
-}
-async function addGymVenue() {
-  const v = await openFormModal({ eyebrow: 'VENUES', title: 'new venue', submitText: 'add venue',
-    fields: [
-      { key: 'name', label: 'venue name', required: true, placeholder: 'e.g. Skykings Arena' },
-      { key: 'area', label: 'area', placeholder: 'e.g. Kondapur' },
-      { key: 'address', label: 'full address', placeholder: 'street, area, city' },
-      { key: 'phone', label: 'phone', placeholder: '+91 ...' },
-      { key: 'lat', label: 'latitude (optional)', inputmode: 'decimal', placeholder: 'e.g. 17.44' },
-      { key: 'lng', label: 'longitude (optional)', inputmode: 'decimal', placeholder: 'e.g. 78.35' }
-    ] });
-  if (!v) return;
-  try {
-    await api('/api/gym/venues', { method: 'POST', body: JSON.stringify(v) });
-    showToast('venue added'); refreshGym(); loadCatalog();
-  } catch (e) { showToast(e.message); }
-}
-async function addGymProgram() {
-  const d = gymDashboardCache;
-  if (!d || !d.gyms.length) { showToast('no venues assigned'); return; }
-  const sports = (sportsData || []).map(s => ({ value: s._id, label: s.name }));
-  if (!sports.length) { showToast('no sports found'); return; }
-  const fields = [];
-  if (d.gyms.length > 1) fields.push({ key: 'gymId', label: 'venue', type: 'select',
-    options: d.gyms.map(g => ({ value: g._id, label: g.name })), value: d.gyms[0]._id });
-  fields.push(
-    { key: 'name', label: 'program name', required: true, placeholder: 'e.g. Morning Batch' },
-    { key: 'sportId', label: 'sport', type: 'select', options: sports, value: sports[0].value },
-    { key: 'day', label: 'day', placeholder: 'e.g. Monday' },
-    { key: 'startTime', label: 'start time', placeholder: 'e.g. 18:00' },
-    { key: 'endTime', label: 'end time', placeholder: 'e.g. 20:00' },
-    { key: 'capacity', label: 'capacity', type: 'number', value: '20', inputmode: 'numeric' },
-    { key: 'coach', label: 'coach name', placeholder: 'coach name' },
-    { key: 'level', label: 'level', type: 'select', options: [{ value: 'beginner', label: 'beginner' }, { value: 'intermediate', label: 'intermediate' }, { value: 'advanced', label: 'advanced' }] }
-  );
-  const v = await openFormModal({ eyebrow: 'PROGRAMS', title: 'new program', submitText: 'add program', fields });
-  if (!v) return;
-  const gymId = v.gymId || d.gyms[0]._id;
-  const gym = d.gyms.find(g => String(g._id) === String(gymId));
-  const body = {
-    sportId: v.sportId, gymId, name: v.name,
-    location: gym.name + ', ' + (gym.area || ''),
-    day: v.day, startTime: v.startTime, endTime: v.endTime,
-    capacity: parseInt(v.capacity, 10) || 20, coach: v.coach, level: v.level || 'beginner'
-  };
-  try {
-    await api('/api/gym/programs', { method: 'POST', body: JSON.stringify(body) });
-    showToast('program added'); refreshGym(); loadCatalog();
-  } catch (e) { showToast(e.message); }
-}
-
-/* ---------- custom cursor ---------- */
-(function () {
-  if (!window.matchMedia('(pointer:fine)').matches) return;
-  const dot = document.createElement('div'); dot.id = 'cursor-dot';
-  const ring = document.createElement('div'); ring.id = 'cursor-ring';
-  document.body.appendChild(dot); document.body.appendChild(ring);
-  let mx = -100, my = -100, rx = -100, ry = -100;
-  addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
-    dot.style.left = mx + 'px'; dot.style.top = my + 'px';
-  });
-  (function loop() {
-    rx += (mx - rx) * 0.16; ry += (my - ry) * 0.16;
-    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-    requestAnimationFrame(loop);
-  })();
-  const sel = 'a,button,select,input,.sport,.venue-card,.program,.portal-tab,.admin-tab';
-  document.addEventListener('mouseover', e => { if (e.target.closest(sel)) ring.classList.add('grow'); });
-  document.addEventListener('mouseout', e => { if (e.target.closest(sel)) ring.classList.remove('grow'); });
-})();
-
-/* ---------- scroll reveals ---------- */
-(function () {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
-    document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
-    return;
-  }
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
-  const watch = root => {
-    if (root.classList && root.classList.contains('reveal') && !root.classList.contains('visible')) io.observe(root);
-    if (root.querySelectorAll) root.querySelectorAll('.reveal:not(.visible)').forEach(el => io.observe(el));
-  };
-  watch(document);
-  new MutationObserver(muts => {
-    muts.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) watch(n); }));
-  }).observe(document.body, { childList: true, subtree: true });
-})();
-
-/* ---------- portals & tabs ---------- */
-function toggleMenu() { document.body.classList.toggle('menu-open'); }
-function showPortal(type) {
-  if (type === 'admin' && (!currentUser || currentUser.role !== 'admin')) { openAdminMfa(); return; }
-  if (type !== 'admin' && !currentUser) { showLogin(); showToast('login with google first'); return; }
-  document.body.classList.remove('menu-open');
-  document.querySelectorAll('.portal-section').forEach(x => x.classList.remove('active'));
-  document.querySelector('main').style.display = 'none';
-  document.querySelector('footer').style.display = 'none';
-  const target = document.getElementById(type === 'admin' ? 'adminPortal' : type === 'gym' ? 'gymPortal' : 'userPortal');
-  target.classList.add('active');
-  if (type === 'user') {
-    refreshUserPortal();
-    switchUserTab('overview', document.querySelector('#userPortal .portal-tab'));
-  } else if (type === 'gym') {
-    refreshGym();
-    switchGymTab('overview', document.querySelector('#gymPortal .admin-tab'));
-  } else {
+function onAdminLogin() {
+  closeMfaModal();
+  document.getElementById('adminLogin').style.display = 'none';
+  document.getElementById('adminTop').style.display = '';
+  document.getElementById('adminApp').style.display = '';
+  document.getElementById('adminPortal').classList.add('active');
+  showToast('welcome back, admin');
+  (async () => {
+    try { await loadAdminCatalog(); } catch (e) { console.warn('catalog failed', e.message); }
     refreshAdmin();
     connectRealtime();
     switchAdminTab('dashboard', document.querySelector('#adminPortal .admin-tab'));
-  }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  })();
 }
-function closePortals() {
-  document.body.classList.remove('menu-open');
-  document.querySelectorAll('.portal-section').forEach(x => x.classList.remove('active'));
-  document.querySelector('main').style.display = '';
-  document.querySelector('footer').style.display = '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+function adminLogout() {
+  jwt = null; currentUser = null;
+  localStorage.removeItem('ss_jwt');
+  if (socket) { socket.disconnect(); socket = null; }
+  location.reload();
 }
-function switchUserTab(tab, btn) {
-  document.querySelectorAll('#userPortal .portal-panel').forEach(x => x.classList.remove('active'));
-  document.getElementById('user-' + tab).classList.add('active');
-  document.querySelectorAll('#userPortal .portal-tab').forEach(x => x.classList.remove('active'));
-  btn.classList.add('active');
-}
-function switchAdminTab(tab, btn) {
-  document.querySelectorAll('#adminPortal .admin-panel').forEach(x => x.classList.remove('active'));
-  document.getElementById('admin-' + tab).classList.add('active');
-  document.querySelectorAll('#adminPortal .admin-tab').forEach(x => x.classList.remove('active'));
-  btn.classList.add('active');
-  if (tab === 'content') refreshSiteContent();
-}
-
-/* ---------- ai widget (answers from live catalog) ---------- */
-function toggleChat() {
-  const chat = document.getElementById('aiChatWindow');
-  chat.classList.toggle('show');
-  if (chat.classList.contains('show')) document.getElementById('aiInput').focus();
-}
-async function sendAiMessage() {
-  const input = document.getElementById('aiInput');
-  const text = input.value.trim();
-  if (!text) return;
-  const box = document.getElementById('aiMessages');
-  const um = document.createElement('div');
-  um.className = 'msg user'; um.textContent = text;
-  box.appendChild(um);
-  input.value = '';
-  box.scrollTop = box.scrollHeight;
-  let reply = null;
-  try {
-    const r = await api('/api/ai/chat', { method: 'POST', body: JSON.stringify({ message: text }) });
-    reply = r.reply;
-  } catch (e) {}
-  setTimeout(() => {
-    const bm = document.createElement('div');
-    bm.className = 'msg bot'; bm.textContent = reply || aiAnswer(text);
-    box.appendChild(bm);
-    box.scrollTop = box.scrollHeight;
-  }, 500);
-}
-function aiAnswer(text) {
-  const t = text.toLowerCase();
-  const sport = sportsData.find(s => t.includes(s.name.toLowerCase()));
-  if (sport) {
-    const ps = programsData.filter(p => sportIdOf(p) === sport._id);
-    if (!ps.length) return 'no ' + sport.name + ' programs right now.';
-    return sport.name + ': ' + ps.map(p =>
-      p.name + ' on ' + (p.day || '') + 's ' + (p.startTime || '') + '-' + (p.endTime || '') + ' at ' + (p.location || '')
-    ).join('; ') + '.';
-  }
-  if (t.includes('venue') || t.includes('where') || t.includes('location') || t.includes('map')) {
-    if (!gymsData.length) return 'venues are loading, one sec.';
-    return 'we have ' + gymsData.length + ' venues across hyderabad: ' +
-      gymsData.slice(0, 8).map(g => g.name + ' (' + (g.area || '') + ')').join(', ') +
-      (gymsData.length > 8 ? ', and more. scroll the venues section for the full list with maps.' : '.');
-  }
-  if (t.includes('coach')) {
-    const q = t.replace('coach', '').trim();
-    const ps = programsData.filter(p => (p.coach || '').toLowerCase().includes(q));
-    if (!ps.length) return 'couldnt find that coach. try a name like arjun or ananya.';
-    return ps.map(p => p.coach + ' coaches ' + p.name + ' on ' + (p.day || '') + 's at ' + (p.location || '')).join('; ') + '.';
-  }
-  if (t.includes('plan') || t.includes('price') || t.includes('cost')) {
-    return 'plans: ' + plansData.map(p => p.name + ' ' + inr(p.priceInr) + ' ' + (p.billingCycle || '')).join(', ') + '.';
-  }
-  if (t.includes('invoice') || t.includes('bill') || t.includes('pay')) {
-    return 'pick a plan and we create an invoice for you. pay it with upi or card in test mode and it flips to paid instantly.';
-  }
-  return 'ask me about a sport, plans, or billing. try "football" or "plans".';
-}
-
-/* ---------- boot ---------- */
-document.getElementById('loginModal').addEventListener('click', e => {
-  if (e.target.id === 'loginModal') hideLogin();
-});
-document.getElementById('loginModal').addEventListener('keydown', e => {
-  if (e.key === 'Escape') hideLogin();
-});
-function catalogFailed() {
-  const msg = '<p style="opacity:.6;font-size:14px">could not reach the server. start the backend, then refresh.</p>';
-  ['sportGrid', 'programGrid', 'plansGrid', 'gymList'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el && !el.innerHTML.trim()) el.innerHTML = msg;
-  });
-}
-document.getElementById('themeToggle').addEventListener('click',(e)=>{
-  const root=document.documentElement;
-  const next=root.dataset.theme==='light'?'dark':'light';
-  const x=e.clientX||window.innerWidth-80, y=e.clientY||40;
-  const maxD=Math.hypot(Math.max(x,window.innerWidth-x),Math.max(y,window.innerHeight-y))||1;
-  const els=root.querySelectorAll('body *');
-  els.forEach(el=>{
-    const r=el.getBoundingClientRect();
-    if(!r.width&&!r.height)return;
-    const d=Math.hypot(r.left+r.width/2-x,r.top+r.height/2-y)/maxD;
-    el.style.setProperty('--td',(d*400).toFixed(0)+'ms');
-  });
-  root.classList.add('theme-anim');
-  root.dataset.theme=next;
-  try{localStorage.setItem('ss-theme',next)}catch(err){}
-  setTimeout(()=>{
-    root.classList.remove('theme-anim');
-    els.forEach(el=>el.style.removeProperty('--td'));
-  },1150);
-});
 window.addEventListener('DOMContentLoaded', async () => {
-  try { await loadCatalog(); }
-  catch (e) { console.warn('api not reachable yet:', e.message); catalogFailed(); }
-  await restoreSession();
+  if (jwt) {
+    try {
+      const me = await api('/api/auth/me');
+      if (me && me.role === 'admin') { currentUser = me; onAdminLogin(); return; }
+    } catch (e) { /* fall through to login */ }
+    jwt = null; localStorage.removeItem('ss_jwt');
+  }
 });
 
 </script>
-
-<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
 </body>
 </html>
