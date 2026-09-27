@@ -785,6 +785,10 @@ async function api(path, opts = {}) {
   return data;
 }
 const sportIdOf = p => (p.sportId && p.sportId._id) ? p.sportId._id : p.sportId;
+function isFitnessGym(g) { if (!g) return false; if (g.kind === 'gym') return true; if (g.kind === 'venue') return false;
+  return /gold's gym|f45|cultfit|snap fitness|anytime fitness|crossfit|fitness first/i.test(g.name || ''); }
+function sportsVenues() { return (gymsData || []).filter(g => !isFitnessGym(g)); }
+function fitnessGyms() { return (gymsData || []).filter(isFitnessGym); }
 
 /* ---------- catalog ---------- */
 async function loadCatalog() {
@@ -1112,7 +1116,7 @@ function openFormModal(opts) {
     document.getElementById('formFields').innerHTML = formFields.map((f, i) => {
       let input;
       if (f.type === 'select') {
-        input = '<select id="ff' + i + '">' + (f.options || []).map(o =>
+        input = '<select id="ff' + i + '"' + (f.onchange ? ' onchange="' + f.onchange + '"' : '') + '>' + (f.options || []).map(o =>
           '<option value="' + esc(o.value) + '"' + (String(o.value) === String(f.value == null ? '' : f.value) ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
       } else if (f.type === 'textarea') {
         input = '<textarea id="ff' + i + '" rows="3" placeholder="' + esc(f.placeholder) + '">' + esc(f.value) + '</textarea>';
@@ -1122,7 +1126,7 @@ function openFormModal(opts) {
       } else {
         input = '<input id="ff' + i + '" type="' + esc(f.type || 'text') + '" value="' + esc(f.value) + '" placeholder="' + esc(f.placeholder) + '"' + (f.inputmode ? ' inputmode="' + esc(f.inputmode) + '"' : '') + '>';
       }
-      return '<div class="form-field"><label>' + esc(f.label) + '</label>' + input + '</div>';
+      return '<div class="form-field" id="formfield_' + esc(f.key) + '"><label>' + esc(f.label) + '</label>' + input + '</div>';
     }).join('');
     document.getElementById('formModal').classList.add('show');
     setTimeout(() => { const first = document.getElementById('ff0'); if (first) first.focus(); }, 60);
@@ -1136,6 +1140,7 @@ function closeFormModal(result) {
 /* ---------- place search (nominatim, no api key). pick a suggestion ->
    lat/lng autofill, google embed auto-builds from lat/lng on the site ---------- */
 let placeSearchTimer = null;
+let lastPlaceResults = [];
 function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 async function placeSearch(idx, q) {
   const box = document.getElementById('ffsugg' + idx);
@@ -1145,30 +1150,39 @@ async function placeSearch(idx, q) {
   if (q.length < 3) { box.innerHTML = ''; return; }
   placeSearchTimer = setTimeout(async () => {
     try {
-      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&q=' + encodeURIComponent(q));
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&addressdetails=1&extratags=1&q=' + encodeURIComponent(q));
       const arr = await r.json();
-      box.innerHTML = arr.map(p => {
+      lastPlaceResults = arr;
+      box.innerHTML = arr.map((p, n) => {
         const label = p.display_name.split(',').slice(0, 3).join(',');
-        return '<button type="button" onclick="pickPlace(' + idx + ', this)" data-lat="' + p.lat + '" data-lon="' + p.lon +
-          '" data-name="' + escAttr(p.name || label) + '"><span>' + escAttr(label) + '</span>' +
+        return '<button type="button" onclick="pickPlace(' + idx + ', ' + n + ')"><span>' + escAttr(label) + '</span>' +
           '<small>' + escAttr(p.type || 'place') + ' · ' + String(p.lat).slice(0, 7) + ', ' + String(p.lon).slice(0, 7) + '</small></button>';
       }).join('') || '<p style="font-size:12px;color:var(--faint)">no matches</p>';
     } catch (e) { box.innerHTML = ''; }
   }, 400);
 }
-function pickPlace(idx, btn) {
-  const lat = btn.getAttribute('data-lat'), lon = btn.getAttribute('data-lon');
-  const setByKey = (key, val) => {
+function pickPlace(idx, n) {
+  const p = (lastPlaceResults || [])[n] || {};
+  const a = p.address || {}, et = p.extratags || {};
+  const setByKey = (key, val, onlyEmpty) => {
+    if (val == null || val === '') return;
     const fi = (formFields || []).findIndex(f => f.key === key);
-    if (fi > -1) { const el = document.getElementById('ff' + fi); if (el) el.value = val; }
+    if (fi > -1) {
+      const el = document.getElementById('ff' + fi);
+      if (el && (!onlyEmpty || !el.value.trim())) el.value = val;
+    }
   };
-  setByKey('lat', lat); setByKey('lng', lon);
-  const ni = (formFields || []).findIndex(f => f.key === 'name');
-  const nameEl = ni > -1 ? document.getElementById('ff' + ni) : null;
-  if (nameEl && !nameEl.value.trim()) nameEl.value = btn.getAttribute('data-name') || '';
+  setByKey('lat', p.lat);
+  setByKey('lng', p.lon);
+  const label = (p.display_name || '').split(',').slice(0, 3).join(',');
+  setByKey('name', p.name || label, true);
+  setByKey('area', a.suburb || a.neighbourhood || a.city_district || a.town || a.village || a.city || '', true);
+  setByKey('address', p.display_name || '', true);
+  setByKey('phone', et.phone || et['contact:phone'] || '', true);
+  setByKey('email', et.email || et['contact:email'] || '', true);
   document.getElementById('ffsugg' + idx).innerHTML = '';
-  document.getElementById('ff' + idx).value = btn.getAttribute('data-name') || '';
-  showToast('location set — map auto-embeds from lat/lng');
+  document.getElementById('ff' + idx).value = p.name || label;
+  showToast('location set — details autofilled from map data');
 }
 function submitFormModal() {
   const err = document.getElementById('formError');
@@ -1448,13 +1462,12 @@ function bookProgramDirect() {
 }
 
 /* ---------- venues explore (updated) ---------- */
-const FEATURED_GYMS = ["Gold's Gym Banjara Hills", "Gold's Gym Himayat Nagar", "F45 Training Basheer Bagh", "F45 Training Madhapur", "Snap Fitness Madhapur", "Anytime Fitness Jubilee Hills"];
 const sportNameOf = p => { const s = sportsData.find(x => String(x._id) === String(sportIdOf(p))); return s ? s.name : 'General training'; };
 let currentExplore = { kind: 'gym', id: null };
 let exploreSportId = null;
 function gymById(id) { return gymsData.find(g => String(g._id) === String(id)); }
 function sportIdOfGym(g) { const s = g.sportId; return s ? String(typeof s === 'object' ? s._id : s) : null; }
-function venuesOfSport(sportId) { return (gymsData || []).filter(g => sportIdOfGym(g) === String(sportId)); }
+function venuesOfSport(sportId) { return (gymsData || []).filter(g => !isFitnessGym(g) && sportIdOfGym(g) === String(sportId)); }
 function gymOfProgram(p) { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return gymById(gid); }
 function sportVenue(sportId) { const p = programsData.find(p => sportIdOf(p) === sportId); return p ? gymOfProgram(p) : null; }
 function exploreItem(kind, key, name, sub, i) {
@@ -1469,7 +1482,7 @@ function exploreSportItem(s, i) {
     '<h4>' + (s.icon || '') + ' ' + s.name + '</h4><span>' + n + ' venues</span></button>';
 }
 function renderExplore() {
-  const gyms = FEATURED_GYMS.map(n => gymsData.find(g => g.name === n)).filter(Boolean);
+  const gyms = fitnessGyms();
   document.getElementById('gymListLabel').textContent = 'Gyms';
   document.getElementById('gymList').innerHTML = gyms.map((g, i) => exploreItem('gym', g._id, g.name, g.area || '', i)).join('');
   document.getElementById('sportList').innerHTML = sportsData.map((s, i) => exploreSportItem(s, i)).join('');
@@ -1501,8 +1514,9 @@ function previewPlace(kind, id) {
     detail = programRows(ps) || '<p style="opacity:.6;font-size:13px">no programs listed yet</p>';
   } else {
     const s = sportsData.find(x => String(x._id) === String(id)); if (!s) return;
+    const sVenues = venuesOfSport(String(id));
     const v = sportVenue(id);
-    name = (s.icon || '') + ' ' + s.name; sub = v ? ('Flagship venue · ' + v.name) : ''; areaName = v ? (v.area || '') : '';
+    name = (s.icon || '') + ' ' + s.name; sub = sVenues.length + ' venues pinned'; areaName = '';
     if (v) { lat = v.lat; lng = v.lng; }
     detail = programRows(programsData.filter(p => sportIdOf(p) === String(id)));
   }
@@ -1514,7 +1528,15 @@ function previewPlace(kind, id) {
   document.getElementById('exDetail').innerHTML = (contact ? '<p class="ex-contact">' + contact + '</p>' : '') + detail;
   const q = (lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad');
   const customEmbed = (kind === 'gym' && gymById(id).mapEmbedUrl) ? gymById(id).mapEmbedUrl : '';
-  document.getElementById('exMap').src = customEmbed || ('https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed');
+  let mapSrc;
+  if (kind === 'sport') {
+    const pins = venuesOfSport(String(id)).filter(g => g.lat && g.lng)
+      .map(g => g.lat + ',' + g.lng + ',' + encodeURIComponent(g.name || 'venue')).join('|');
+    mapSrc = pins ? 'venues-map.html?pins=' + pins : 'https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed';
+  } else {
+    mapSrc = customEmbed || ('https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed');
+  }
+  document.getElementById('exMap').src = mapSrc;
   document.getElementById('exDir').href = 'https://www.google.com/maps/dir/?api=1&destination=' + ((lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad'));
 }
 

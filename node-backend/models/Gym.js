@@ -10,6 +10,7 @@ const gymSchema = new mongoose.Schema({
   email: String,       // official contact email
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // gym owner login
   sportId: { type: mongoose.Schema.Types.ObjectId, ref: 'Sport' }, // primary sport for this venue
+  kind: { type: String, enum: ['venue', 'gym'], default: 'venue' }, // sports venue vs fitness gym
   createdAt: { type: Date, default: Date.now }
 });
 module.exports = mongoose.model('Gym', gymSchema);
