@@ -137,6 +137,7 @@ button{font-family:var(--sans)}
 .sat-wrap{position:relative;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--bg2)}
 .sat-wrap iframe{width:100%;height:440px;border:0;display:block}
 .sat-tag{position:absolute;top:14px;left:14px;font-size:10.5px;letter-spacing:.2em;background:rgba(5,5,6,.72);border:1px solid var(--line);padding:8px 14px;border-radius:99px;color:#f4f2ed;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.area-chip{position:absolute;top:14px;right:14px;z-index:2;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;background:rgba(5,5,6,.72);border:1px solid var(--line);padding:8px 14px;border-radius:99px;color:var(--lime);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .explore-actions{display:flex;gap:12px;margin:18px 0}
 .explore-actions .primary-btn,.explore-actions .ghost-btn{flex:1;text-align:center}
 .ghost-btn{display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--line);color:var(--text);padding:15px 32px;border-radius:99px;font-size:14.5px;text-decoration:none;transition:border-color .2s}
@@ -251,6 +252,11 @@ button{font-family:var(--sans)}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1 !important;transform:none !important;transition:none}}
 .stat-row,.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:26px}
 .stat-row.cols5,.table-row.cols5{grid-template-columns:1fr 1.3fr 1fr 1.3fr .7fr}
+.table-row.cols8{grid-template-columns:.9fr .9fr 1.4fr .9fr 1.1fr .7fr .9fr .7fr}
+.place-sugg{display:grid;gap:4px;margin-top:6px}
+.place-sugg button{text-align:left;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);cursor:pointer}
+.place-sugg button:hover{border-color:var(--lime)}
+.place-sugg button small{display:block;color:var(--faint);font-size:11px;margin-top:2px}
 .portal-stat{background:var(--bg);padding:28px 26px}
 .portal-stat span{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.14em}
 .portal-stat strong,.portal-stat b{display:block;font-family:var(--disp);font-size:32px;font-weight:500;letter-spacing:-.02em;margin-top:10px}
@@ -403,8 +409,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="admin-tab" onclick="switchAdminTab('users', this)">users</button>
       <button class="admin-tab" onclick="switchAdminTab('programs', this)">programs</button>
       <button class="admin-tab" onclick="switchAdminTab('subscriptions', this)">subscriptions</button>
-      <button class="admin-tab" onclick="switchAdminTab('billing', this)">billing</button>
-      <button class="admin-tab" onclick="switchAdminTab('content', this)">site content</button>
+      <button class="admin-tab" onclick="switchAdminTab('venues', this)">venues</button>
     </aside>
 
     <main class="portal-content">
@@ -435,24 +440,17 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
 
       <div id="admin-subscriptions" class="admin-panel">
         <div class="panel-card">
-          <h3>subscriptions</h3>
-          <div class="portal-table"><div class="table-row"><span>loading subscriptions…</span></div></div>
-        </div>
-      </div>
-
-      <div id="admin-billing" class="admin-panel">
-        <div class="panel-card">
-          <div class="table-title"><h3>invoices & payments</h3><button class="small-btn" onclick="exportCSV()">export csv</button></div>
-          <div class="portal-table"><div class="table-row"><span>loading invoices…</span></div></div>
-        </div>
-      </div>
-
-      <div id="admin-content" class="admin-panel">
-        <div class="panel-card">
           <div class="table-title"><h3>subscription plans</h3><button class="small-btn" onclick="addPlan()">+ add plan</button></div>
           <div class="portal-table" id="adminPlansTable"><div class="table-row"><span>loading plans…</span></div></div>
           <p style="font-size:12px;color:var(--faint)">plans show up in the membership section on the site.</p>
         </div>
+        <div class="panel-card">
+          <div class="table-title"><h3>billing</h3><button class="small-btn" onclick="exportCSV()">export csv</button></div>
+          <div class="portal-table" id="adminTxnTable"><div class="table-row"><span>loading transactions…</span></div></div>
+        </div>
+      </div>
+
+      <div id="admin-venues" class="admin-panel">
         <div class="panel-card">
           <div class="table-title"><h3 id="sportsVenuesTitle">sports & venues</h3><button class="small-btn" id="backToSportsBtn" style="display:none" onclick="renderSportsVenues()">← all sports</button></div>
           <div id="sportsVenuesBody"><div class="table-row"><span>loading…</span></div></div>
@@ -534,9 +532,9 @@ const sportIdOf = p => (p.sportId && p.sportId._id) ? p.sportId._id : p.sportId;
 async function refreshAdmin() {
   if (!currentUser || currentUser.role !== 'admin') return;
   try {
-    const [stats, users, subs, invoices] = await Promise.all([
+    const [stats, users, txns] = await Promise.all([
       api('/api/admin/stats'), api('/api/admin/users'),
-      api('/api/admin/subscriptions'), api('/api/admin/invoices')
+      api('/api/admin/transactions')
     ]);
     const boxes = document.querySelectorAll('#adminPortal .portal-stat strong');
     const smalls = document.querySelectorAll('#adminPortal .portal-stat small');
@@ -553,17 +551,24 @@ async function refreshAdmin() {
         '<div class="table-row"><span>' + u.fullName + '</span><span>' + u.email + '</span><span>' + badge(u.role) +
         '</span><span>' + fmtDate(u.createdAt) + '</span></div>').join('');
 
-    document.querySelector('#admin-subscriptions .portal-table').innerHTML =
-      '<div class="table-row cols5 table-header"><span>subscription</span><span>user</span><span>plan</span><span>program</span><span>status</span></div>' +
-      subs.slice(0, 30).map(s =>
-        '<div class="table-row cols5"><span>#SUB-' + shortId(s._id) + '</span><span>' + (s.userId ? s.userId.email : '-') +
-        '</span><span>' + (s.planId ? s.planId.name : '-') + '</span><span>' + (s.programId ? s.programId.name : '-') + '</span>' + badge(s.status) + '</div>').join('');
-
-    renderAdminInvoices(invoices);
+    renderAdminTransactions(txns);
     renderAdminPrograms();
     refreshMfaStatus();
     refreshSiteContent();
   } catch (e) { console.warn('admin refresh failed', e.message); }
+}
+function renderAdminTransactions(txns) {
+  const el = document.getElementById('adminTxnTable');
+  if (!el) return;
+  const rows = (txns || []).slice(0, 50).map(t =>
+    '<div class="table-row cols8"><span>' + fmtDate(t.date) + '</span><span>#PAY-' + t.payment_id + '</span>' +
+    '<span>' + t.athlete + '<br><small style="color:var(--faint)">' + t.email + '</small></span>' +
+    '<span>#' + t.invoice_id + '</span><span>' + t.plan + '</span><span>' + inr(t.amount_in) + '</span>' +
+    '<span>' + t.method + (t.txn_ref && t.txn_ref !== '-' ? '<br><small style="color:var(--faint)">' + t.txn_ref + '</small>' : '') + '</span>' +
+    badge(t.status) + '</div>').join('');
+  el.innerHTML =
+    '<div class="table-row cols8 table-header"><span>date</span><span>payment</span><span>athlete</span><span>invoice</span><span>plan</span><span>amount</span><span>method</span><span>status</span></div>' +
+    (rows || '<div class="table-row"><span>no transactions yet</span></div>');
 }
 /* ---------- admin mfa (totp: google authenticator / duo / proton auth) ---------- */
 /* ---------- mfa login modal (replaces the native prompt) ---------- */
@@ -628,6 +633,9 @@ function openFormModal(opts) {
           '<option value="' + esc(o.value) + '"' + (String(o.value) === String(f.value == null ? '' : f.value) ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
       } else if (f.type === 'textarea') {
         input = '<textarea id="ff' + i + '" rows="3" placeholder="' + esc(f.placeholder) + '">' + esc(f.value) + '</textarea>';
+      } else if (f.type === 'placesearch') {
+        input = '<input id="ff' + i + '" type="text" value="' + esc(f.value) + '" placeholder="' + esc(f.placeholder) + '" autocomplete="off" oninput="placeSearch(' + i + ', this.value)">' +
+          '<div class="place-sugg" id="ffsugg' + i + '"></div>';
       } else {
         input = '<input id="ff' + i + '" type="' + esc(f.type || 'text') + '" value="' + esc(f.value) + '" placeholder="' + esc(f.placeholder) + '"' + (f.inputmode ? ' inputmode="' + esc(f.inputmode) + '"' : '') + '>';
       }
@@ -641,6 +649,43 @@ function closeFormModal(result) {
   document.getElementById('formModal').classList.remove('show');
   const r = formResolve; formResolve = null; formFields = [];
   if (r) r(result);
+}
+/* ---------- place search (nominatim, no api key). pick a suggestion ->
+   lat/lng autofill, google embed auto-builds from lat/lng on the site ---------- */
+let placeSearchTimer = null;
+function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+async function placeSearch(idx, q) {
+  const box = document.getElementById('ffsugg' + idx);
+  if (!box) return;
+  clearTimeout(placeSearchTimer);
+  q = (q || '').trim();
+  if (q.length < 3) { box.innerHTML = ''; return; }
+  placeSearchTimer = setTimeout(async () => {
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&q=' + encodeURIComponent(q));
+      const arr = await r.json();
+      box.innerHTML = arr.map(p => {
+        const label = p.display_name.split(',').slice(0, 3).join(',');
+        return '<button type="button" onclick="pickPlace(' + idx + ', this)" data-lat="' + p.lat + '" data-lon="' + p.lon +
+          '" data-name="' + escAttr(p.name || label) + '"><span>' + escAttr(label) + '</span>' +
+          '<small>' + escAttr(p.type || 'place') + ' · ' + String(p.lat).slice(0, 7) + ', ' + String(p.lon).slice(0, 7) + '</small></button>';
+      }).join('') || '<p style="font-size:12px;color:var(--faint)">no matches</p>';
+    } catch (e) { box.innerHTML = ''; }
+  }, 400);
+}
+function pickPlace(idx, btn) {
+  const lat = btn.getAttribute('data-lat'), lon = btn.getAttribute('data-lon');
+  const setByKey = (key, val) => {
+    const fi = (formFields || []).findIndex(f => f.key === key);
+    if (fi > -1) { const el = document.getElementById('ff' + fi); if (el) el.value = val; }
+  };
+  setByKey('lat', lat); setByKey('lng', lon);
+  const ni = (formFields || []).findIndex(f => f.key === 'name');
+  const nameEl = ni > -1 ? document.getElementById('ff' + ni) : null;
+  if (nameEl && !nameEl.value.trim()) nameEl.value = btn.getAttribute('data-name') || '';
+  document.getElementById('ffsugg' + idx).innerHTML = '';
+  document.getElementById('ff' + idx).value = btn.getAttribute('data-name') || '';
+  showToast('location set — map auto-embeds from lat/lng');
 }
 function submitFormModal() {
   const err = document.getElementById('formError');
@@ -815,7 +860,8 @@ function renderSportsVenues() {
   const rows = (sportsData || []).map(s => {
     const sid = String(s._id);
     const progs = (programsData || []).filter(p => sportIdStr(p) === sid);
-    const venueIds = [...new Set(progs.map(progGymIdStr).filter(Boolean))];
+    const gymIds = (gymsData || []).filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === sid; }).map(g => String(g._id));
+    const venueIds = [...new Set([...progs.map(progGymIdStr).filter(Boolean), ...gymIds])];
     return '<div class="table-row"><span>' + s.name + '</span><span>' + venueIds.length + ' venues</span><span>' + progs.length + ' programs</span>' +
       '<span><button class="small-btn" onclick="openSport(\'' + s._id + '\')">venues \u2192</button></span></div>';
   }).join('');
@@ -829,7 +875,8 @@ function openSport(sportId) {
   document.getElementById('sportsVenuesTitle').textContent = sport ? sport.name + ' venues' : 'venues';
   document.getElementById('backToSportsBtn').style.display = '';
   const progs = (programsData || []).filter(p => sportIdStr(p) === activeSportId);
-  const venueIds = [...new Set(progs.map(progGymIdStr).filter(Boolean))];
+  const gymIds = (gymsData || []).filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === activeSportId; }).map(g => String(g._id));
+  const venueIds = [...new Set([...progs.map(progGymIdStr).filter(Boolean), ...gymIds])];
   const cards = venueIds.map(vid => {
     const g = (gymsData || []).find(x => String(x._id) === vid);
     if (!g) return '';
@@ -853,6 +900,7 @@ async function editVenue(id) {
   if (!g) return;
   const v = await openFormModal({ eyebrow: 'VENUES', title: 'edit venue', submitText: 'save',
     fields: [
+      { key: '_place', label: 'search place', type: 'placesearch', placeholder: 'type a name to move the pin' },
       { key: 'name', label: 'venue name', required: true, value: g.name },
       { key: 'area', label: 'area', value: g.area },
       { key: 'address', label: 'full address', value: g.address },
@@ -864,6 +912,7 @@ async function editVenue(id) {
     ] });
   if (!v) return;
   const body = Object.assign({}, v);
+  delete body._place;
   if (body.lat === '') delete body.lat; else body.lat = Number(body.lat);
   if (body.lng === '') delete body.lng; else body.lng = Number(body.lng);
   try {
@@ -877,6 +926,7 @@ async function addVenue() {
   const sports = (sportsData || []).map(s => ({ value: String(s._id), label: s.name }));
   const v = await openFormModal({ eyebrow: 'VENUES', title: 'new venue', submitText: 'add venue',
     fields: [
+      { key: '_place', label: 'search place', type: 'placesearch', placeholder: 'type a name for suggestions, e.g. fitness plus gym' },
       ...(sports.length > 1 ? [{ key: '_sport', label: 'sport', type: 'select', options: sports, value: activeSportId || sports[0].value }] : []),
       { key: 'name', label: 'venue name', required: true, placeholder: 'e.g. Skykings Arena' },
       { key: 'area', label: 'place / area', placeholder: 'e.g. Kondapur' },
@@ -888,7 +938,8 @@ async function addVenue() {
       { key: 'mapEmbedUrl', label: 'google maps embed link', placeholder: 'empty = auto map from lat/lng' }
     ] });
   if (!v) return;
-  delete v._sport;
+  if (v._sport) v.sportId = v._sport;
+  delete v._sport; delete v._place;
   if (v.lat === '') delete v.lat; else v.lat = Number(v.lat);
   if (v.lng === '') delete v.lng; else v.lng = Number(v.lng);
   try {
@@ -904,19 +955,6 @@ async function delPlan(id) {
     await api('/api/admin/plans/' + id, { method: 'DELETE' });
     plansData = await api('/api/plans'); renderPlans(); renderAdminPlans(); showToast('plan deleted');
   } catch (e) { showToast(e.message); }
-}
-function renderAdminInvoices(invoices) {
-  document.querySelector('#admin-billing .portal-table').innerHTML =
-    '<div class="table-row table-header"><span>invoice</span><span>user</span><span>amount</span><span>status</span></div>' +
-    invoices.slice(0, 30).map(i =>
-      '<div class="table-row"><span>#INV-' + shortId(i._id) + '</span><span>' +
-      (i.subscriptionId && i.subscriptionId.userId ? i.subscriptionId.userId.email : '-') + '</span><span>' +
-      inr(i.amountInr) + '</span>' + badge(i.status) + '</div>').join('');
-}
-async function refreshAdmin() {
-  if (!currentUser || currentUser.role !== 'admin') return;
-  try { renderAdminInvoices(await api('/api/admin/invoices')); }
-  catch (e) { console.warn('billing refresh failed', e.message); }
 }
 function exportCSV() {
   window.location = API + '/api/admin/export/transactions?token=' + encodeURIComponent(jwt);
@@ -957,6 +995,28 @@ function connectRealtime() {
   socket.on('invoice:created', () => { showToast('new invoice created'); refreshAdmin(); });
   socket.on('invoice:updated', () => { showToast('invoice updated'); refreshAdmin(); });
 }
+
+
+/* ---------- custom cursor ---------- */
+(function () {
+  if (!window.matchMedia('(pointer:fine)').matches) return;
+  const dot = document.createElement('div'); dot.id = 'cursor-dot';
+  const ring = document.createElement('div'); ring.id = 'cursor-ring';
+  document.body.appendChild(dot); document.body.appendChild(ring);
+  let mx = -100, my = -100, rx = -100, ry = -100;
+  addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+  });
+  (function loop() {
+    rx += (mx - rx) * 0.16; ry += (my - ry) * 0.16;
+    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+    requestAnimationFrame(loop);
+  })();
+  const sel = 'a,button,select,input,.sport,.venue-card,.program,.portal-tab,.admin-tab';
+  document.addEventListener('mouseover', e => { if (e.target.closest(sel)) ring.classList.add('grow'); });
+  document.addEventListener('mouseout', e => { if (e.target.closest(sel)) ring.classList.remove('grow'); });
+})();
 
 
 
