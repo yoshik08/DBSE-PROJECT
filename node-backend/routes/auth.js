@@ -1,11 +1,78 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// POST /api/auth/register { fullName, email, password }
+router.post('/register', async (req, res) => {
+  try {
+    const { fullName, email, password } = req.body || {};
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ error: 'fullName, email and password are required' });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ error: 'password must be at least 6 characters' });
+    }
+    const cleanEmail = String(email).trim().toLowerCase();
+    const existing = await User.findOne({ email: cleanEmail });
+    if (existing) return res.status(409).json({ error: 'user already exists' });
+
+    const passwordHash = await bcrypt.hash(String(password), 12);
+    const user = await User.create({
+      fullName: String(fullName).trim(),
+      email: cleanEmail,
+      passwordHash,
+      role: 'athlete'
+    });
+
+    const token = jwt.sign({ userId: user._id.toString(), role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({
+      token,
+      user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role }
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'register failed', detail: e.message });
+  }
+});
+
+// POST /api/auth/login { email, password }
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ error: 'email and password are required' });
+    }
+
+    const user = await User.findOne({ email: String(email).trim().toLowerCase() });
+    if (!user || !user.passwordHash || user.passwordHash === 'OAUTH_ONLY') {
+      return res.status(401).json({ error: 'invalid credentials' });
+    }
+    const ok = await bcrypt.compare(String(password), user.passwordHash);
+    if (!ok) return res.status(401).json({ error: 'invalid credentials' });
+
+    if (user.role === 'admin' && user.mfaEnabled) {
+      const tempToken = jwt.sign(
+        { userId: user._id.toString(), purpose: 'mfa' },
+        process.env.JWT_SECRET,
+        { expiresIn: '5m' }
+      );
+      return res.json({ mfaRequired: true, tempToken });
+    }
+
+    const token = jwt.sign({ userId: user._id.toString(), role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({
+      token,
+      user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role }
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'login failed', detail: e.message });
+  }
+});
 
 // POST /api/auth/google  { idToken } -> { token, user }
 // mapping: google account -> users collection

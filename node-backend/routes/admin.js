@@ -65,6 +65,69 @@ router.get('/site-content', async (req, res) => {
 
 router.use(auth, admin); // everything below is admin-only (header-token auth)
 
+// GET /api/admin/transactions -> merged billing view for subscriptions + payments
+router.get('/transactions', async (req, res) => {
+  const [payments, subscriptions] = await Promise.all([
+    Payment.find()
+      .populate({
+        path: 'invoiceId',
+        populate: {
+          path: 'subscriptionId',
+          populate: [
+            { path: 'userId', select: 'fullName email' },
+            { path: 'planId', select: 'name priceInr billingCycle' }
+          ]
+        }
+      })
+      .sort({ paidAt: -1 }),
+    Subscription.find()
+      .populate('userId', 'fullName email')
+      .populate('planId', 'name priceInr billingCycle')
+      .sort({ createdAt: -1 })
+  ]);
+
+  const transactions = [];
+  for (const payment of payments) {
+    const invoice = payment.invoiceId || {};
+    const sub = invoice.subscriptionId || {};
+    transactions.push({
+      type: 'payment',
+      id: payment._id,
+      amountInr: payment.amountInr,
+      method: payment.method,
+      txnRef: payment.txnRef,
+      status: payment.status,
+      date: payment.paidAt,
+      invoiceId: invoice._id,
+      subscriptionId: sub._id,
+      user: sub.userId ? { id: sub.userId._id, fullName: sub.userId.fullName, email: sub.userId.email } : null,
+      plan: sub.planId ? { id: sub.planId._id, name: sub.planId.name, priceInr: sub.planId.priceInr, billingCycle: sub.planId.billingCycle } : null
+    });
+  }
+
+  for (const sub of subscriptions) {
+    const present = transactions.some(tx => String(tx.subscriptionId) === String(sub._id));
+    if (!present) {
+      transactions.push({
+        type: 'subscription',
+        id: sub._id,
+        amountInr: sub.planId?.priceInr || 0,
+        method: null,
+        txnRef: null,
+        status: sub.status,
+        date: sub.createdAt,
+        invoiceId: null,
+        subscriptionId: sub._id,
+        user: sub.userId ? { id: sub.userId._id, fullName: sub.userId.fullName, email: sub.userId.email } : null,
+        plan: sub.planId ? { id: sub.planId._id, name: sub.planId.name, priceInr: sub.planId.priceInr, billingCycle: sub.planId.billingCycle } : null
+      });
+    }
+  }
+
+  transactions.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  res.json(transactions);
+});
+
 // ---- admin totp mfa (google authenticator / duo / proton auth) ----
 // POST /api/admin/mfa/setup -> { otpauthUrl, qrDataUrl, secret } (scan or type key, then enable)
 router.post('/mfa/setup', async (req, res) => {
