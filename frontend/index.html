@@ -132,6 +132,7 @@ button{font-family:var(--sans)}
 .explore-item h4{margin:0 0 4px;font-size:15.5px;font-weight:600;letter-spacing:-.01em}
 .explore-item span{font-size:13px;color:var(--faint)}
 .explore-item.active{padding-left:22px;background:rgba(216,255,63,.03)}
+.explore-hint{padding:17px 6px;color:var(--faint);font-size:13.5px}
 .explore-item.active::before{content:'';position:absolute;left:0;top:20px;bottom:20px;width:2px;background:var(--lime);border-radius:2px}
 .explore-preview{position:sticky;top:90px;min-width:0}
 .sat-wrap{position:relative;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--bg2)}
@@ -1261,6 +1262,10 @@ function openBooking() {
     placeName = g.name;
     contact = [g.phone, g.email].filter(Boolean).join(' · ');
     bookPrograms = programsData.filter(p => String((p.gymId && p.gymId._id) || p.gymId) === String(id));
+  } else if (kind === 'gyms') {
+    placeName = '\u{1F4AA} Fitness Gyms';
+    const gids = fitnessGyms().map(g => String(g._id));
+    bookPrograms = programsData.filter(p => gids.includes(String((p.gymId && p.gymId._id) || p.gymId)));
   } else {
     const s = sportsData.find(x => String(x._id) === String(id)); if (!s) return;
     placeName = (s.icon || '') + ' ' + s.name;
@@ -1483,15 +1488,17 @@ function exploreSportItem(s, i) {
 }
 function exploreGymsItem(i) {
   const gyms = fitnessGyms();
-  const first = gyms[0] ? gyms[0]._id : '';
-  const hover = first ? ' onmouseenter="previewPlace(\'gym\',\'' + first + '\')"' : '';
   return '<button class="explore-item reveal" data-key="__gyms" style="transition-delay:' + Math.min(i * 35, 420) + 'ms"' +
-    hover + ' onclick="exploreGyms()">' +
+    ' onmouseenter="previewPlace(\'gyms\',\'__gyms\')" onclick="exploreGyms()">' +
     '<h4>\u{1F4AA} Fitness Gyms</h4><span>' + gyms.length + ' gyms</span></button>';
 }
 function renderExplore() {
   document.getElementById('sportList').innerHTML = exploreGymsItem(0) + sportsData.map((s, i) => exploreSportItem(s, i + 1)).join('');
-  exploreGyms();
+  exploreSportId = null;
+  document.getElementById('gymListLabel').textContent = 'Venues';
+  document.getElementById('gymList').innerHTML = '<div class="explore-hint">pick a category below to browse its venues</div>';
+  const gyms = fitnessGyms();
+  if (gyms[0]) previewPlace('gym', gyms[0]._id);
 }
 function exploreGyms() {
   exploreSportId = null;
@@ -1525,6 +1532,11 @@ function previewPlace(kind, id) {
     lat = g.lat; lng = g.lng; phone = g.phone || ''; email = g.email || '';
     const ps = programsData.filter(p => { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return String(gid) === String(id); });
     detail = programRows(ps) || '<p style="opacity:.6;font-size:13px">no programs listed yet</p>';
+  } else if (kind === 'gyms') {
+    const gs = fitnessGyms();
+    name = '\u{1F4AA} Fitness Gyms'; sub = gs.length + ' gyms pinned'; areaName = '';
+    const gids = gs.map(g => String(g._id));
+    detail = programRows(programsData.filter(p => { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return gids.includes(String(gid)); }));
   } else {
     const s = sportsData.find(x => String(x._id) === String(id)); if (!s) return;
     const sVenues = venuesOfSport(String(id));
@@ -1542,8 +1554,9 @@ function previewPlace(kind, id) {
   const q = (lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad');
   const customEmbed = (kind === 'gym' && gymById(id).mapEmbedUrl) ? gymById(id).mapEmbedUrl : '';
   let mapSrc;
-  if (kind === 'sport') {
-    const pins = venuesOfSport(String(id)).filter(g => g.lat && g.lng)
+  if (kind === 'sport' || kind === 'gyms') {
+    const list = kind === 'gyms' ? fitnessGyms() : venuesOfSport(String(id));
+    const pins = list.filter(g => g.lat && g.lng)
       .map(g => g.lat + ',' + g.lng + ',' + encodeURIComponent(g.name || 'venue')).join('|');
     mapSrc = pins ? 'venues-map.html?pins=' + pins : 'https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed';
   } else {
