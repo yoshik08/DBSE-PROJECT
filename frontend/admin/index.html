@@ -894,15 +894,37 @@ function openSport(sportId) {
     const mapTag = g.mapEmbedUrl
       ? '<span style="font-size:11px;color:var(--lime)">custom map</span>'
       : '<span style="font-size:11px;color:var(--faint)">auto map</span>';
-    return '<div class="panel-card" style="margin-bottom:10px">' +
+    return '<div class="panel-card" style="margin-bottom:10px;cursor:pointer" onmouseenter="previewAdminVenue(\'' + g._id + '\')" onclick="if(event.target.tagName!==\'BUTTON\')previewAdminVenue(\'' + g._id + '\')">' +
       '<div class="table-title"><h3 style="font-size:15px">' + g.name + '</h3><button class="small-btn" onclick="editVenue(\'' + g._id + '\')">edit</button></div>' +
       '<p style="font-size:13px;color:var(--faint)">' + [g.area, g.phone].filter(Boolean).join(' \u00b7 ') + ' ' + mapTag + '</p>' +
       (progList ? '<p style="font-size:13px;margin-top:6px;line-height:1.7">' + progList + '</p>' : '') +
       '</div>';
   }).join('');
   document.getElementById('sportsVenuesBody').innerHTML =
-    (cards || '<p style="font-size:13px;color:var(--faint)">no venues for this sport yet.</p>') +
-    '<button class="small-btn" onclick="addVenue()">+ add venue</button>';
+    '<div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">' +
+      '<div>' + (cards || '<p style="font-size:13px;color:var(--faint)">no venues for this sport yet.</p>') +
+      '<button class="small-btn" onclick="addVenue()">+ add venue</button></div>' +
+      '<div class="panel-card" style="position:sticky;top:16px;margin-bottom:0">' +
+        '<h3 id="adminVenuePreviewName" style="font-size:15px">hover a venue</h3>' +
+        '<p id="adminVenuePreviewSub" style="font-size:13px;color:var(--faint)"></p>' +
+        '<iframe id="adminVenuePreviewMap" title="venue map" style="width:100%;height:280px;border:0;border-radius:12px;margin-top:8px" loading="lazy"></iframe>' +
+      '</div>' +
+    '</div>';
+  const first = venueIds.map(vid => (gymsData || []).find(x => String(x._id) === vid)).find(Boolean);
+  if (first) previewAdminVenue(first._id);
+}
+function previewAdminVenue(id) {
+  const g = (gymsData || []).find(x => String(x._id) === String(id));
+  if (!g) return;
+  const nameEl = document.getElementById('adminVenuePreviewName');
+  const subEl = document.getElementById('adminVenuePreviewSub');
+  const mapEl = document.getElementById('adminVenuePreviewMap');
+  if (nameEl) nameEl.textContent = g.name;
+  if (subEl) subEl.textContent = [g.area, g.address].filter(Boolean).join(' · ');
+  if (mapEl) {
+    const q = (g.lat && g.lng) ? (g.lat + ',' + g.lng) : encodeURIComponent(g.name + ' Hyderabad');
+    mapEl.src = g.mapEmbedUrl || ('https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed');
+  }
 }
 async function editVenue(id) {
   const g = (gymsData || []).find(x => String(x._id) === String(id));
