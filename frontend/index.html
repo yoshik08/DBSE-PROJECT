@@ -1481,12 +1481,25 @@ function exploreSportItem(s, i) {
     ' onmouseenter="previewPlace(\'sport\',\'' + s._id + '\')" onclick="exploreSport(\'' + s._id + '\')">' +
     '<h4>' + (s.icon || '') + ' ' + s.name + '</h4><span>' + n + ' venues</span></button>';
 }
-function renderExplore() {
+function exploreGymsItem(i) {
   const gyms = fitnessGyms();
-  document.getElementById('gymListLabel').textContent = 'Gyms';
-  document.getElementById('gymList').innerHTML = gyms.map((g, i) => exploreItem('gym', g._id, g.name, g.area || '', i)).join('');
-  document.getElementById('sportList').innerHTML = sportsData.map((s, i) => exploreSportItem(s, i)).join('');
+  const first = gyms[0] ? gyms[0]._id : '';
+  const hover = first ? ' onmouseenter="previewPlace(\'gym\',\'' + first + '\')"' : '';
+  return '<button class="explore-item reveal" data-key="__gyms" style="transition-delay:' + Math.min(i * 35, 420) + 'ms"' +
+    hover + ' onclick="exploreGyms()">' +
+    '<h4>\u{1F4AA} Fitness Gyms</h4><span>' + gyms.length + ' gyms</span></button>';
+}
+function renderExplore() {
+  document.getElementById('sportList').innerHTML = exploreGymsItem(0) + sportsData.map((s, i) => exploreSportItem(s, i + 1)).join('');
+  exploreGyms();
+}
+function exploreGyms() {
   exploreSportId = null;
+  const gyms = fitnessGyms();
+  document.getElementById('gymListLabel').innerHTML = '\u{1F4AA} Fitness Gyms' +
+    ' <a href="javascript:void(0)" onclick="renderExplore()" style="float:right;letter-spacing:0;text-transform:none;font-size:12px">\u2190 all</a>';
+  document.getElementById('gymList').innerHTML = gyms.map((g, i) => exploreItem('gym', g._id, g.name, g.area || '', i)).join('') ||
+    '<div><strong>no gyms yet</strong></div>';
   if (gyms[0]) previewPlace('gym', gyms[0]._id);
 }
 function exploreSport(sportId) {
