@@ -1,6 +1,4 @@
 <!DOCTYPE html>
-<!-- SPORTSPHERE ADMIN FINAL-FIXED v4 2026-09-27 -->
-
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -654,6 +652,7 @@ function closeFormModal(result) {
 /* ---------- place search (nominatim, no api key). pick a suggestion ->
    lat/lng autofill, google embed auto-builds from lat/lng on the site ---------- */
 let placeSearchTimer = null;
+let lastPlaceResults = [];
 function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 async function placeSearch(idx, q) {
   const box = document.getElementById('ffsugg' + idx);
@@ -663,30 +662,39 @@ async function placeSearch(idx, q) {
   if (q.length < 3) { box.innerHTML = ''; return; }
   placeSearchTimer = setTimeout(async () => {
     try {
-      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&q=' + encodeURIComponent(q));
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&addressdetails=1&extratags=1&q=' + encodeURIComponent(q));
       const arr = await r.json();
-      box.innerHTML = arr.map(p => {
+      lastPlaceResults = arr;
+      box.innerHTML = arr.map((p, n) => {
         const label = p.display_name.split(',').slice(0, 3).join(',');
-        return '<button type="button" onclick="pickPlace(' + idx + ', this)" data-lat="' + p.lat + '" data-lon="' + p.lon +
-          '" data-name="' + escAttr(p.name || label) + '"><span>' + escAttr(label) + '</span>' +
+        return '<button type="button" onclick="pickPlace(' + idx + ', ' + n + ')"><span>' + escAttr(label) + '</span>' +
           '<small>' + escAttr(p.type || 'place') + ' · ' + String(p.lat).slice(0, 7) + ', ' + String(p.lon).slice(0, 7) + '</small></button>';
       }).join('') || '<p style="font-size:12px;color:var(--faint)">no matches</p>';
     } catch (e) { box.innerHTML = ''; }
   }, 400);
 }
-function pickPlace(idx, btn) {
-  const lat = btn.getAttribute('data-lat'), lon = btn.getAttribute('data-lon');
-  const setByKey = (key, val) => {
+function pickPlace(idx, n) {
+  const p = (lastPlaceResults || [])[n] || {};
+  const a = p.address || {}, et = p.extratags || {};
+  const setByKey = (key, val, onlyEmpty) => {
+    if (val == null || val === '') return;
     const fi = (formFields || []).findIndex(f => f.key === key);
-    if (fi > -1) { const el = document.getElementById('ff' + fi); if (el) el.value = val; }
+    if (fi > -1) {
+      const el = document.getElementById('ff' + fi);
+      if (el && (!onlyEmpty || !el.value.trim())) el.value = val;
+    }
   };
-  setByKey('lat', lat); setByKey('lng', lon);
-  const ni = (formFields || []).findIndex(f => f.key === 'name');
-  const nameEl = ni > -1 ? document.getElementById('ff' + ni) : null;
-  if (nameEl && !nameEl.value.trim()) nameEl.value = btn.getAttribute('data-name') || '';
+  setByKey('lat', p.lat);
+  setByKey('lng', p.lon);
+  const label = (p.display_name || '').split(',').slice(0, 3).join(',');
+  setByKey('name', p.name || label, true);
+  setByKey('area', a.suburb || a.neighbourhood || a.city_district || a.town || a.village || a.city || '', true);
+  setByKey('address', p.display_name || '', true);
+  setByKey('phone', et.phone || et['contact:phone'] || '', true);
+  setByKey('email', et.email || et['contact:email'] || '', true);
   document.getElementById('ffsugg' + idx).innerHTML = '';
-  document.getElementById('ff' + idx).value = btn.getAttribute('data-name') || '';
-  showToast('location set — map auto-embeds from lat/lng');
+  document.getElementById('ff' + idx).value = p.name || label;
+  showToast('location set — details autofilled from map data');
 }
 function submitFormModal() {
   const err = document.getElementById('formError');
