@@ -410,6 +410,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="admin-tab" onclick="switchAdminTab('programs', this)">programs</button>
       <button class="admin-tab" onclick="switchAdminTab('subscriptions', this)">subscriptions</button>
       <button class="admin-tab" onclick="switchAdminTab('venues', this)">venues</button>
+      <button class="admin-tab" onclick="switchAdminTab('gyms', this)">gyms</button>
     </aside>
 
     <main class="portal-content">
@@ -454,6 +455,12 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
         <div class="panel-card">
           <div class="table-title"><h3 id="sportsVenuesTitle">sports & venues</h3><button class="small-btn" id="backToSportsBtn" style="display:none" onclick="renderSportsVenues()">← all sports</button></div>
           <div id="sportsVenuesBody"><div class="table-row"><span>loading…</span></div></div>
+        </div>
+      </div>
+      <div id="admin-gyms" class="admin-panel">
+        <div class="panel-card">
+          <div class="table-title"><h3>gyms</h3><button class="small-btn" onclick="addVenue('gym')">+ add gym</button></div>
+          <div id="gymsBody"><div class="table-row"><span>loading…</span></div></div>
         </div>
       </div>
     </main>
@@ -525,6 +532,10 @@ async function api(path, opts = {}) {
   return data;
 }
 const sportIdOf = p => (p.sportId && p.sportId._id) ? p.sportId._id : p.sportId;
+function isFitnessGym(g) { if (!g) return false; if (g.kind === 'gym') return true; if (g.kind === 'venue') return false;
+  return /gold's gym|f45|cultfit|snap fitness|anytime fitness|crossfit|fitness first/i.test(g.name || ''); }
+function sportsVenues() { return (gymsData || []).filter(g => !isFitnessGym(g)); }
+function fitnessGyms() { return (gymsData || []).filter(isFitnessGym); }
 
 
 /* ---------- admin portal ---------- */
@@ -869,7 +880,7 @@ function renderSportsVenues() {
   const rows = (sportsData || []).map(s => {
     const sid = String(s._id);
     const progs = (programsData || []).filter(p => sportIdStr(p) === sid);
-    const gymIds = (gymsData || []).filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === sid; }).map(g => String(g._id));
+    const gymIds = sportsVenues().filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === sid; }).map(g => String(g._id));
     const venueIds = [...new Set([...progs.map(progGymIdStr).filter(Boolean), ...gymIds])];
     return '<div class="table-row"><span>' + s.name + '</span><span>' + venueIds.length + ' venues</span><span>' + progs.length + ' programs</span>' +
       '<span><button class="small-btn" onclick="openSport(\'' + s._id + '\')">venues \u2192</button></span></div>';
@@ -884,7 +895,7 @@ function openSport(sportId) {
   document.getElementById('sportsVenuesTitle').textContent = sport ? sport.name + ' venues' : 'venues';
   document.getElementById('backToSportsBtn').style.display = '';
   const progs = (programsData || []).filter(p => sportIdStr(p) === activeSportId);
-  const gymIds = (gymsData || []).filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === activeSportId; }).map(g => String(g._id));
+  const gymIds = sportsVenues().filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === activeSportId; }).map(g => String(g._id));
   const venueIds = [...new Set([...progs.map(progGymIdStr).filter(Boolean), ...gymIds])];
   const cards = venueIds.map(vid => {
     const g = (gymsData || []).find(x => String(x._id) === vid);
@@ -913,12 +924,33 @@ function openSport(sportId) {
   const first = venueIds.map(vid => (gymsData || []).find(x => String(x._id) === vid)).find(Boolean);
   if (first) previewAdminVenue(first._id);
 }
-function previewAdminVenue(id) {
+function renderGyms() {
+  const gyms = fitnessGyms();
+  const cards = gyms.map(g => {
+    const mapTag = g.mapEmbedUrl
+      ? '<span style="font-size:11px;color:var(--lime)">custom map</span>'
+      : '<span style="font-size:11px;color:var(--faint)">auto map</span>';
+    return '<div class="panel-card" style="margin-bottom:10px;cursor:pointer" onmouseenter="previewAdminVenue(\'' + g._id + '\',\'adminGymPreview\')" onclick="if(event.target.tagName!==\'BUTTON\')previewAdminVenue(\'' + g._id + '\',\'adminGymPreview\')">' +
+      '<div class="table-title"><h3 style="font-size:15px">' + g.name + '</h3><button class="small-btn" onclick="editVenue(\'' + g._id + '\')">edit</button></div>' +
+      '<p style="font-size:13px;color:var(--faint)">' + [g.area, g.phone].filter(Boolean).join(' \u00b7 ') + ' ' + mapTag + '</p></div>';
+  }).join('');
+  document.getElementById('gymsBody').innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">' +
+    '<div>' + (cards || '<p style="font-size:13px;color:var(--faint)">no gyms yet.</p>') + '</div>' +
+    '<div class="panel-card" style="position:sticky;top:16px;margin-bottom:0">' +
+    '<h3 id="adminGymPreviewName" style="font-size:15px">hover a gym</h3>' +
+    '<p id="adminGymPreviewSub" style="font-size:13px;color:var(--faint)"></p>' +
+    '<iframe id="adminGymPreviewMap" title="gym map" style="width:100%;height:280px;border:0;border-radius:12px;margin-top:8px" loading="lazy"></iframe>' +
+    '</div></div>';
+  if (gyms[0]) previewAdminVenue(gyms[0]._id, 'adminGymPreview');
+}
+function previewAdminVenue(id, prefix) {
+  prefix = prefix || 'adminVenuePreview';
   const g = (gymsData || []).find(x => String(x._id) === String(id));
   if (!g) return;
-  const nameEl = document.getElementById('adminVenuePreviewName');
-  const subEl = document.getElementById('adminVenuePreviewSub');
-  const mapEl = document.getElementById('adminVenuePreviewMap');
+  const nameEl = document.getElementById(prefix + 'Name');
+  const subEl = document.getElementById(prefix + 'Sub');
+  const mapEl = document.getElementById(prefix + 'Map');
   if (nameEl) nameEl.textContent = g.name;
   if (subEl) subEl.textContent = [g.area, g.address].filter(Boolean).join(' · ');
   if (mapEl) {
@@ -932,6 +964,7 @@ async function editVenue(id) {
   const v = await openFormModal({ eyebrow: 'VENUES', title: 'edit venue', submitText: 'save',
     fields: [
       { key: '_place', label: 'search place', type: 'placesearch', placeholder: 'type a name to move the pin' },
+      { key: 'kind', label: 'type', type: 'select', options: [{ value: 'venue', label: 'sports venue' }, { value: 'gym', label: 'fitness gym' }], value: isFitnessGym(g) ? 'gym' : 'venue' },
       { key: 'name', label: 'venue name', required: true, value: g.name },
       { key: 'area', label: 'area', value: g.area },
       { key: 'address', label: 'full address', value: g.address },
@@ -949,16 +982,18 @@ async function editVenue(id) {
   try {
     await api('/api/admin/gyms/' + id, { method: 'PUT', body: JSON.stringify(body) });
     gymsData = await api('/api/gyms'); loadCatalog();
-    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
+    if (document.getElementById('admin-gyms').classList.contains('active')) renderGyms();
+    else if (activeSportId) openSport(activeSportId); else renderSportsVenues();
     showToast('venue updated');
   } catch (e) { showToast(e.message); }
 }
-async function addVenue() {
+async function addVenue(presetKind) {
   const sports = (sportsData || []).map(s => ({ value: String(s._id), label: s.name }));
   const v = await openFormModal({ eyebrow: 'VENUES', title: 'new venue', submitText: 'add venue',
     fields: [
       { key: '_place', label: 'search place', type: 'placesearch', placeholder: 'type a name for suggestions, e.g. fitness plus gym' },
       ...(sports.length > 1 ? [{ key: '_sport', label: 'sport', type: 'select', options: sports, value: activeSportId || sports[0].value }] : []),
+      { key: 'kind', label: 'type', type: 'select', options: [{ value: 'venue', label: 'sports venue' }, { value: 'gym', label: 'fitness gym' }], value: presetKind || 'venue' },
       { key: 'name', label: 'venue name', required: true, placeholder: 'e.g. Skykings Arena' },
       { key: 'area', label: 'place / area', placeholder: 'e.g. Kondapur' },
       { key: 'address', label: 'full address', placeholder: 'street, area, city' },
@@ -976,7 +1011,8 @@ async function addVenue() {
   try {
     await api('/api/admin/gyms', { method: 'POST', body: JSON.stringify(v) });
     gymsData = await api('/api/gyms'); loadCatalog();
-    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
+    if (document.getElementById('admin-gyms').classList.contains('active')) renderGyms();
+    else if (activeSportId) openSport(activeSportId); else renderSportsVenues();
     showToast('venue added. add programs for it in the programs tab.');
   } catch (e) { showToast(e.message); }
 }
@@ -1034,6 +1070,7 @@ function switchAdminTab(tab, btn) {
   document.querySelectorAll('#adminPortal .admin-tab').forEach(x => x.classList.remove('active'));
   btn.classList.add('active');
   if (tab === 'venues') refreshSiteContent();
+  if (tab === 'gyms') renderGyms();
 }
 
 /* ---------- custom cursor ---------- */
