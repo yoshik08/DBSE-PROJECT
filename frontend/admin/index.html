@@ -456,9 +456,12 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
           <div id="sportsVenuesBody"><div class="table-row"><span>loading…</span></div></div>
         </div>
       </div>
+    </main>
+  </div>
 </section>
 </div>
-<div class="modal-box">
+<div class="modal" id="mfaModal">
+  <div class="modal-box">
     <div class="eyebrow" id="mfaEyebrow">TWO FACTOR</div>
     <h2 id="mfaTitle">check your app</h2>
     <p>enter the 6-digit code from your authenticator app</p>
@@ -469,9 +472,8 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="primary-btn" onclick="submitMfa()">verify</button>
     </div>
   </div>
-</div>
-
-<div class="modal" <div class="modal-box" style="text-align:left;max-height:88vh;overflow-y:auto">
+</div><div class="modal" id="formModal" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&event.target.tagName!=='SELECT')submitFormModal();if(event.key==='Escape')closeFormModal(null)">
+  <div class="modal-box" style="text-align:left;max-height:88vh;overflow-y:auto">
     <div class="eyebrow" id="formEyebrow">ADMIN</div>
     <h2 id="formTitle">form</h2>
     <div id="formFields" style="display:grid;gap:12px;margin-top:16px"></div>
@@ -481,9 +483,8 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="primary-btn" id="formSubmitBtn" onclick="submitFormModal()">save</button>
     </div>
   </div>
-</div>
-
-<div class="modal" <div class="modal-box">
+</div><div class="modal" id="confirmModal" onkeydown="if(event.key==='Escape')closeConfirmModal(false)">
+  <div class="modal-box">
     <div class="eyebrow">ARE YOU SURE</div>
     <h2 id="confirmTitle">delete this?</h2>
     <p id="confirmMsg" style="margin-top:8px"></p>
@@ -492,9 +493,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="primary-btn" id="confirmYesBtn" onclick="closeConfirmModal(true)">delete</button>
     </div>
   </div>
-</div>
-
-<div <div id="toast"></div>
+</div><div id="toast"></div>
 <script>
 const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')? 'http://localhost:5000': 'https://dbse-project.onrender.com';
 let jwt = localStorage.getItem('ss_jwt') || null;
