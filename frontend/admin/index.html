@@ -410,6 +410,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="admin-tab" onclick="switchAdminTab('programs', this)">programs</button>
       <button class="admin-tab" onclick="switchAdminTab('subscriptions', this)">subscriptions</button>
       <button class="admin-tab" onclick="switchAdminTab('venues', this)">venues</button>
+      <button class="admin-tab" onclick="switchAdminTab('gyms', this)">gyms</button>
     </aside>
 
     <main class="portal-content">
@@ -456,9 +457,18 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
           <div id="sportsVenuesBody"><div class="table-row"><span>loading…</span></div></div>
         </div>
       </div>
+      <div id="admin-gyms" class="admin-panel">
+        <div class="panel-card">
+          <div class="table-title"><h3>gyms</h3><button class="small-btn" onclick="addVenue('gym')">+ add gym</button></div>
+          <div id="gymsBody"><div class="table-row"><span>loading…</span></div></div>
+        </div>
+      </div>
+    </main>
+  </div>
 </section>
 </div>
-<div class="modal-box">
+<div class="modal" id="mfaModal">
+  <div class="modal-box">
     <div class="eyebrow" id="mfaEyebrow">TWO FACTOR</div>
     <h2 id="mfaTitle">check your app</h2>
     <p>enter the 6-digit code from your authenticator app</p>
@@ -469,9 +479,8 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="primary-btn" onclick="submitMfa()">verify</button>
     </div>
   </div>
-</div>
-
-<div class="modal" <div class="modal-box" style="text-align:left;max-height:88vh;overflow-y:auto">
+</div><div class="modal" id="formModal" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&event.target.tagName!=='SELECT')submitFormModal();if(event.key==='Escape')closeFormModal(null)">
+  <div class="modal-box" style="text-align:left;max-height:88vh;overflow-y:auto">
     <div class="eyebrow" id="formEyebrow">ADMIN</div>
     <h2 id="formTitle">form</h2>
     <div id="formFields" style="display:grid;gap:12px;margin-top:16px"></div>
@@ -481,9 +490,8 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="primary-btn" id="formSubmitBtn" onclick="submitFormModal()">save</button>
     </div>
   </div>
-</div>
-
-<div class="modal" <div class="modal-box">
+</div><div class="modal" id="confirmModal" onkeydown="if(event.key==='Escape')closeConfirmModal(false)">
+  <div class="modal-box">
     <div class="eyebrow">ARE YOU SURE</div>
     <h2 id="confirmTitle">delete this?</h2>
     <p id="confirmMsg" style="margin-top:8px"></p>
@@ -492,9 +500,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <button class="primary-btn" id="confirmYesBtn" onclick="closeConfirmModal(true)">delete</button>
     </div>
   </div>
-</div>
-
-<div <div id="toast"></div>
+</div><div id="toast"></div>
 <script>
 const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')? 'http://localhost:5000': 'https://dbse-project.onrender.com';
 let jwt = localStorage.getItem('ss_jwt') || null;
@@ -526,6 +532,10 @@ async function api(path, opts = {}) {
   return data;
 }
 const sportIdOf = p => (p.sportId && p.sportId._id) ? p.sportId._id : p.sportId;
+function isFitnessGym(g) { if (!g) return false; if (g.kind === 'gym') return true; if (g.kind === 'venue') return false;
+  return /gold's gym|f45|cultfit|snap fitness|anytime fitness|crossfit|fitness first/i.test(g.name || ''); }
+function sportsVenues() { return (gymsData || []).filter(g => !isFitnessGym(g)); }
+function fitnessGyms() { return (gymsData || []).filter(isFitnessGym); }
 
 
 /* ---------- admin portal ---------- */
@@ -542,7 +552,7 @@ async function refreshAdmin() {
     if (boxes[1]) boxes[1].textContent = sportsData.length;
     if (smalls[1]) smalls[1].textContent = programsData.length + ' programs';
     if (boxes[2]) boxes[2].textContent = stats.subscriptions;
-    if (boxes[3]) boxes[3].textContent = invoices.length;
+    if (boxes[3]) boxes[3].textContent = txns.length;
     if (smalls[3]) smalls[3].textContent = inr(stats.revenueInr) + ' revenue';
 
     document.querySelector('#admin-users .portal-table').innerHTML =
@@ -629,7 +639,7 @@ function openFormModal(opts) {
     document.getElementById('formFields').innerHTML = formFields.map((f, i) => {
       let input;
       if (f.type === 'select') {
-        input = '<select id="ff' + i + '">' + (f.options || []).map(o =>
+        input = '<select id="ff' + i + '"' + (f.onchange ? ' onchange="' + f.onchange + '"' : '') + '>' + (f.options || []).map(o =>
           '<option value="' + esc(o.value) + '"' + (String(o.value) === String(f.value == null ? '' : f.value) ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
       } else if (f.type === 'textarea') {
         input = '<textarea id="ff' + i + '" rows="3" placeholder="' + esc(f.placeholder) + '">' + esc(f.value) + '</textarea>';
@@ -639,7 +649,7 @@ function openFormModal(opts) {
       } else {
         input = '<input id="ff' + i + '" type="' + esc(f.type || 'text') + '" value="' + esc(f.value) + '" placeholder="' + esc(f.placeholder) + '"' + (f.inputmode ? ' inputmode="' + esc(f.inputmode) + '"' : '') + '>';
       }
-      return '<div class="form-field"><label>' + esc(f.label) + '</label>' + input + '</div>';
+      return '<div class="form-field" id="formfield_' + esc(f.key) + '"><label>' + esc(f.label) + '</label>' + input + '</div>';
     }).join('');
     document.getElementById('formModal').classList.add('show');
     setTimeout(() => { const first = document.getElementById('ff0'); if (first) first.focus(); }, 60);
@@ -653,6 +663,7 @@ function closeFormModal(result) {
 /* ---------- place search (nominatim, no api key). pick a suggestion ->
    lat/lng autofill, google embed auto-builds from lat/lng on the site ---------- */
 let placeSearchTimer = null;
+let lastPlaceResults = [];
 function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 async function placeSearch(idx, q) {
   const box = document.getElementById('ffsugg' + idx);
@@ -662,30 +673,39 @@ async function placeSearch(idx, q) {
   if (q.length < 3) { box.innerHTML = ''; return; }
   placeSearchTimer = setTimeout(async () => {
     try {
-      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&q=' + encodeURIComponent(q));
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&addressdetails=1&extratags=1&q=' + encodeURIComponent(q));
       const arr = await r.json();
-      box.innerHTML = arr.map(p => {
+      lastPlaceResults = arr;
+      box.innerHTML = arr.map((p, n) => {
         const label = p.display_name.split(',').slice(0, 3).join(',');
-        return '<button type="button" onclick="pickPlace(' + idx + ', this)" data-lat="' + p.lat + '" data-lon="' + p.lon +
-          '" data-name="' + escAttr(p.name || label) + '"><span>' + escAttr(label) + '</span>' +
+        return '<button type="button" onclick="pickPlace(' + idx + ', ' + n + ')"><span>' + escAttr(label) + '</span>' +
           '<small>' + escAttr(p.type || 'place') + ' · ' + String(p.lat).slice(0, 7) + ', ' + String(p.lon).slice(0, 7) + '</small></button>';
       }).join('') || '<p style="font-size:12px;color:var(--faint)">no matches</p>';
     } catch (e) { box.innerHTML = ''; }
   }, 400);
 }
-function pickPlace(idx, btn) {
-  const lat = btn.getAttribute('data-lat'), lon = btn.getAttribute('data-lon');
-  const setByKey = (key, val) => {
+function pickPlace(idx, n) {
+  const p = (lastPlaceResults || [])[n] || {};
+  const a = p.address || {}, et = p.extratags || {};
+  const setByKey = (key, val, onlyEmpty) => {
+    if (val == null || val === '') return;
     const fi = (formFields || []).findIndex(f => f.key === key);
-    if (fi > -1) { const el = document.getElementById('ff' + fi); if (el) el.value = val; }
+    if (fi > -1) {
+      const el = document.getElementById('ff' + fi);
+      if (el && (!onlyEmpty || !el.value.trim())) el.value = val;
+    }
   };
-  setByKey('lat', lat); setByKey('lng', lon);
-  const ni = (formFields || []).findIndex(f => f.key === 'name');
-  const nameEl = ni > -1 ? document.getElementById('ff' + ni) : null;
-  if (nameEl && !nameEl.value.trim()) nameEl.value = btn.getAttribute('data-name') || '';
+  setByKey('lat', p.lat);
+  setByKey('lng', p.lon);
+  const label = (p.display_name || '').split(',').slice(0, 3).join(',');
+  setByKey('name', p.name || label, true);
+  setByKey('area', a.suburb || a.neighbourhood || a.city_district || a.town || a.village || a.city || '', true);
+  setByKey('address', p.display_name || '', true);
+  setByKey('phone', et.phone || et['contact:phone'] || '', true);
+  setByKey('email', et.email || et['contact:email'] || '', true);
   document.getElementById('ffsugg' + idx).innerHTML = '';
-  document.getElementById('ff' + idx).value = btn.getAttribute('data-name') || '';
-  showToast('location set — map auto-embeds from lat/lng');
+  document.getElementById('ff' + idx).value = p.name || label;
+  showToast('location set — details autofilled from map data');
 }
 function submitFormModal() {
   const err = document.getElementById('formError');
@@ -860,7 +880,7 @@ function renderSportsVenues() {
   const rows = (sportsData || []).map(s => {
     const sid = String(s._id);
     const progs = (programsData || []).filter(p => sportIdStr(p) === sid);
-    const gymIds = (gymsData || []).filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === sid; }).map(g => String(g._id));
+    const gymIds = sportsVenues().filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === sid; }).map(g => String(g._id));
     const venueIds = [...new Set([...progs.map(progGymIdStr).filter(Boolean), ...gymIds])];
     return '<div class="table-row"><span>' + s.name + '</span><span>' + venueIds.length + ' venues</span><span>' + progs.length + ' programs</span>' +
       '<span><button class="small-btn" onclick="openSport(\'' + s._id + '\')">venues \u2192</button></span></div>';
@@ -875,7 +895,7 @@ function openSport(sportId) {
   document.getElementById('sportsVenuesTitle').textContent = sport ? sport.name + ' venues' : 'venues';
   document.getElementById('backToSportsBtn').style.display = '';
   const progs = (programsData || []).filter(p => sportIdStr(p) === activeSportId);
-  const gymIds = (gymsData || []).filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === activeSportId; }).map(g => String(g._id));
+  const gymIds = sportsVenues().filter(g => { const sp = g.sportId; return sp && String(typeof sp === 'object' ? sp._id : sp) === activeSportId; }).map(g => String(g._id));
   const venueIds = [...new Set([...progs.map(progGymIdStr).filter(Boolean), ...gymIds])];
   const cards = venueIds.map(vid => {
     const g = (gymsData || []).find(x => String(x._id) === vid);
@@ -885,15 +905,63 @@ function openSport(sportId) {
     const mapTag = g.mapEmbedUrl
       ? '<span style="font-size:11px;color:var(--lime)">custom map</span>'
       : '<span style="font-size:11px;color:var(--faint)">auto map</span>';
-    return '<div class="panel-card" style="margin-bottom:10px">' +
+    return '<div class="panel-card" style="margin-bottom:10px;cursor:pointer" onmouseenter="previewAdminVenue(\'' + g._id + '\')" onclick="if(event.target.tagName!==\'BUTTON\')previewAdminVenue(\'' + g._id + '\')">' +
       '<div class="table-title"><h3 style="font-size:15px">' + g.name + '</h3><button class="small-btn" onclick="editVenue(\'' + g._id + '\')">edit</button></div>' +
       '<p style="font-size:13px;color:var(--faint)">' + [g.area, g.phone].filter(Boolean).join(' \u00b7 ') + ' ' + mapTag + '</p>' +
       (progList ? '<p style="font-size:13px;margin-top:6px;line-height:1.7">' + progList + '</p>' : '') +
       '</div>';
   }).join('');
   document.getElementById('sportsVenuesBody').innerHTML =
-    (cards || '<p style="font-size:13px;color:var(--faint)">no venues for this sport yet.</p>') +
-    '<button class="small-btn" onclick="addVenue()">+ add venue</button>';
+    '<div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">' +
+      '<div>' + (cards || '<p style="font-size:13px;color:var(--faint)">no venues for this sport yet.</p>') +
+      '<button class="small-btn" onclick="addVenue()">+ add venue</button></div>' +
+      '<div class="panel-card" style="position:sticky;top:16px;margin-bottom:0">' +
+        '<h3 id="adminVenuePreviewName" style="font-size:15px">hover a venue</h3>' +
+        '<p id="adminVenuePreviewSub" style="font-size:13px;color:var(--faint)"></p>' +
+        '<iframe id="adminVenuePreviewMap" title="venue map" style="width:100%;height:280px;border:0;border-radius:12px;margin-top:8px" loading="lazy"></iframe>' +
+      '</div>' +
+    '</div>';
+  const first = venueIds.map(vid => (gymsData || []).find(x => String(x._id) === vid)).find(Boolean);
+  if (first) previewAdminVenue(first._id);
+}
+function renderGyms() {
+  const gyms = fitnessGyms();
+  const cards = gyms.map(g => {
+    const mapTag = g.mapEmbedUrl
+      ? '<span style="font-size:11px;color:var(--lime)">custom map</span>'
+      : '<span style="font-size:11px;color:var(--faint)">auto map</span>';
+    return '<div class="panel-card" style="margin-bottom:10px;cursor:pointer" onmouseenter="previewAdminVenue(\'' + g._id + '\',\'adminGymPreview\')" onclick="if(event.target.tagName!==\'BUTTON\')previewAdminVenue(\'' + g._id + '\',\'adminGymPreview\')">' +
+      '<div class="table-title"><h3 style="font-size:15px">' + g.name + '</h3><button class="small-btn" onclick="editVenue(\'' + g._id + '\')">edit</button></div>' +
+      '<p style="font-size:13px;color:var(--faint)">' + [g.area, g.phone].filter(Boolean).join(' \u00b7 ') + ' ' + mapTag + '</p></div>';
+  }).join('');
+  document.getElementById('gymsBody').innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">' +
+    '<div>' + (cards || '<p style="font-size:13px;color:var(--faint)">no gyms yet.</p>') + '</div>' +
+    '<div class="panel-card" style="position:sticky;top:16px;margin-bottom:0">' +
+    '<h3 id="adminGymPreviewName" style="font-size:15px">hover a gym</h3>' +
+    '<p id="adminGymPreviewSub" style="font-size:13px;color:var(--faint)"></p>' +
+    '<iframe id="adminGymPreviewMap" title="gym map" style="width:100%;height:280px;border:0;border-radius:12px;margin-top:8px" loading="lazy"></iframe>' +
+    '</div></div>';
+  if (gyms[0]) previewAdminVenue(gyms[0]._id, 'adminGymPreview');
+}
+function previewAdminVenue(id, prefix) {
+  prefix = prefix || 'adminVenuePreview';
+  const g = (gymsData || []).find(x => String(x._id) === String(id));
+  if (!g) return;
+  const nameEl = document.getElementById(prefix + 'Name');
+  const subEl = document.getElementById(prefix + 'Sub');
+  const mapEl = document.getElementById(prefix + 'Map');
+  if (nameEl) nameEl.textContent = g.name;
+  if (subEl) subEl.textContent = [g.area, g.address].filter(Boolean).join(' · ');
+  if (mapEl) {
+    const q = (g.lat && g.lng) ? (g.lat + ',' + g.lng) : encodeURIComponent(g.name + ' Hyderabad');
+    mapEl.src = g.mapEmbedUrl || ('https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed');
+  }
+}
+/* gyms have no sport: hide the sport row when type is fitness gym */
+function toggleSportField(kind) {
+  const row = document.getElementById('formfield__sport');
+  if (row) row.style.display = (kind === 'gym') ? 'none' : '';
 }
 async function editVenue(id) {
   const g = (gymsData || []).find(x => String(x._id) === String(id));
@@ -901,6 +969,7 @@ async function editVenue(id) {
   const v = await openFormModal({ eyebrow: 'VENUES', title: 'edit venue', submitText: 'save',
     fields: [
       { key: '_place', label: 'search place', type: 'placesearch', placeholder: 'type a name to move the pin' },
+      { key: 'kind', label: 'type', type: 'select', options: [{ value: 'venue', label: 'sports venue' }, { value: 'gym', label: 'fitness gym' }], value: isFitnessGym(g) ? 'gym' : 'venue' },
       { key: 'name', label: 'venue name', required: true, value: g.name },
       { key: 'area', label: 'area', value: g.area },
       { key: 'address', label: 'full address', value: g.address },
@@ -918,17 +987,20 @@ async function editVenue(id) {
   try {
     await api('/api/admin/gyms/' + id, { method: 'PUT', body: JSON.stringify(body) });
     gymsData = await api('/api/gyms'); loadCatalog();
-    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
+    if (document.getElementById('admin-gyms').classList.contains('active')) renderGyms();
+    else if (activeSportId) openSport(activeSportId); else renderSportsVenues();
     showToast('venue updated');
   } catch (e) { showToast(e.message); }
 }
-async function addVenue() {
+async function addVenue(presetKind) {
+  const isGym = presetKind === 'gym';
   const sports = (sportsData || []).map(s => ({ value: String(s._id), label: s.name }));
-  const v = await openFormModal({ eyebrow: 'VENUES', title: 'new venue', submitText: 'add venue',
+  const v = await openFormModal({ eyebrow: isGym ? 'GYMS' : 'VENUES', title: isGym ? 'new gym' : 'new venue', submitText: isGym ? 'add gym' : 'add venue',
     fields: [
       { key: '_place', label: 'search place', type: 'placesearch', placeholder: 'type a name for suggestions, e.g. fitness plus gym' },
-      ...(sports.length > 1 ? [{ key: '_sport', label: 'sport', type: 'select', options: sports, value: activeSportId || sports[0].value }] : []),
-      { key: 'name', label: 'venue name', required: true, placeholder: 'e.g. Skykings Arena' },
+      ...((!isGym && sports.length > 1) ? [{ key: '_sport', label: 'sport', type: 'select', options: sports, value: activeSportId || sports[0].value }] : []),
+      { key: 'kind', label: 'type', type: 'select', options: [{ value: 'venue', label: 'sports venue' }, { value: 'gym', label: 'fitness gym' }], value: presetKind || 'venue', onchange: "toggleSportField(this.value)" },
+      { key: 'name', label: isGym ? 'gym name' : 'venue name', required: true, placeholder: isGym ? 'e.g. Fitness Plus' : 'e.g. Skykings Arena' },
       { key: 'area', label: 'place / area', placeholder: 'e.g. Kondapur' },
       { key: 'address', label: 'full address', placeholder: 'street, area, city' },
       { key: 'phone', label: 'contact phone', placeholder: '+91 ...' },
@@ -938,15 +1010,17 @@ async function addVenue() {
       { key: 'mapEmbedUrl', label: 'google maps embed link', placeholder: 'empty = auto map from lat/lng' }
     ] });
   if (!v) return;
-  if (v._sport) v.sportId = v._sport;
+  if (v.kind === 'gym') { delete v.sportId; }
+  else if (v._sport) v.sportId = v._sport;
   delete v._sport; delete v._place;
   if (v.lat === '') delete v.lat; else v.lat = Number(v.lat);
   if (v.lng === '') delete v.lng; else v.lng = Number(v.lng);
   try {
     await api('/api/admin/gyms', { method: 'POST', body: JSON.stringify(v) });
     gymsData = await api('/api/gyms'); loadCatalog();
-    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
-    showToast('venue added. add programs for it in the programs tab.');
+    if (document.getElementById('admin-gyms').classList.contains('active')) renderGyms();
+    else if (activeSportId) openSport(activeSportId); else renderSportsVenues();
+    showToast(isGym ? 'gym added.' : 'venue added. add programs for it in the programs tab.');
   } catch (e) { showToast(e.message); }
 }
 async function delPlan(id) {
@@ -996,6 +1070,15 @@ function connectRealtime() {
   socket.on('invoice:updated', () => { showToast('invoice updated'); refreshAdmin(); });
 }
 
+
+function switchAdminTab(tab, btn) {
+  document.querySelectorAll('#adminPortal .admin-panel').forEach(x => x.classList.remove('active'));
+  document.getElementById('admin-' + tab).classList.add('active');
+  document.querySelectorAll('#adminPortal .admin-tab').forEach(x => x.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'venues') refreshSiteContent();
+  if (tab === 'gyms') renderGyms();
+}
 
 /* ---------- custom cursor ---------- */
 (function () {
