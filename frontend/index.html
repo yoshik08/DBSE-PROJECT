@@ -133,10 +133,12 @@ button{font-family:var(--sans)}
 .explore-item span{font-size:13px;color:var(--faint)}
 .explore-item.active{padding-left:22px;background:rgba(216,255,63,.03)}
 .explore-item.active::before{content:'';position:absolute;left:0;top:20px;bottom:20px;width:2px;background:var(--lime);border-radius:2px}
+.explore-hint{padding:17px 6px;color:var(--faint);font-size:13.5px}
 .explore-preview{position:sticky;top:90px;min-width:0}
 .sat-wrap{position:relative;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--bg2)}
 .sat-wrap iframe{width:100%;height:440px;border:0;display:block}
 .sat-tag{position:absolute;top:14px;left:14px;font-size:10.5px;letter-spacing:.2em;background:rgba(5,5,6,.72);border:1px solid var(--line);padding:8px 14px;border-radius:99px;color:#f4f2ed;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.area-chip{position:absolute;top:14px;right:14px;z-index:2;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;background:rgba(5,5,6,.72);border:1px solid var(--line);padding:8px 14px;border-radius:99px;color:var(--lime);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .explore-actions{display:flex;gap:12px;margin:18px 0}
 .explore-actions .primary-btn,.explore-actions .ghost-btn{flex:1;text-align:center}
 .ghost-btn{display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--line);color:var(--text);padding:15px 32px;border-radius:99px;font-size:14.5px;text-decoration:none;transition:border-color .2s}
@@ -436,7 +438,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
   </div>
   <div class="explore">
     <div class="explore-list reveal">
-      <div class="explore-label">Gyms</div>
+      <div class="explore-label" id="gymListLabel">Gyms</div>
       <div id="gymList"></div>
       <div class="explore-label">Sports</div>
       <div id="sportList"></div>
@@ -447,6 +449,7 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
       <div class="sat-wrap">
         <iframe id="exMap" title="satellite preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         <span class="sat-tag">SATELLITE</span>
+        <span class="area-chip" id="exArea"></span>
       </div>
       <div class="explore-actions">
         <a id="exDir" class="ghost-btn" target="_blank" rel="noopener">Directions</a>
@@ -1712,10 +1715,16 @@ function bookProgramDirect() {
 }
 
 /* ---------- venues explore (updated) ---------- */
-const FEATURED_GYMS = ["Gold's Gym Banjara Hills", "Gold's Gym Himayat Nagar", "F45 Training Basheer Bagh", "F45 Training Madhapur", "Snap Fitness Madhapur", "Anytime Fitness Jubilee Hills"];
 const sportNameOf = p => { const s = sportsData.find(x => String(x._id) === String(sportIdOf(p))); return s ? s.name : 'General training'; };
 let currentExplore = { kind: 'gym', id: null };
+let exploreSportId = null;
 function gymById(id) { return gymsData.find(g => String(g._id) === String(id)); }
+function isFitnessGym(g) { if (!g) return false; if (g.kind === 'gym') return true; if (g.kind === 'venue') return false;
+  return /gold's gym|f45|cultfit|snap fitness|anytime fitness|crossfit|fitness first/i.test(g.name || ''); }
+function sportsVenues() { return (gymsData || []).filter(g => !isFitnessGym(g)); }
+function fitnessGyms() { return (gymsData || []).filter(isFitnessGym); }
+function sportIdOfGym(g) { const s = g.sportId; return s ? String(typeof s === 'object' ? s._id : s) : null; }
+function venuesOfSport(sportId) { return (gymsData || []).filter(g => !isFitnessGym(g) && sportIdOfGym(g) === String(sportId)); }
 function gymOfProgram(p) { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return gymById(gid); }
 function sportVenue(sportId) { const p = programsData.find(p => sportIdOf(p) === sportId); return p ? gymOfProgram(p) : null; }
 function exploreItem(kind, key, name, sub, i) {
@@ -1723,14 +1732,44 @@ function exploreItem(kind, key, name, sub, i) {
     ' onmouseenter="previewPlace(\'' + kind + '\',\'' + key + '\')" onclick="previewPlace(\'' + kind + '\',\'' + key + '\')">' +
     '<h4>' + name + '</h4><span>' + sub + '</span></button>';
 }
+function exploreSportItem(s, i) {
+  const n = venuesOfSport(s._id).length;
+  return '<button class="explore-item reveal" data-key="' + s._id + '" style="transition-delay:' + Math.min(i * 35, 420) + 'ms"' +
+    ' onmouseenter="previewPlace(\'sport\',\'' + s._id + '\')" onclick="exploreSport(\'' + s._id + '\')">' +
+    '<h4>' + (s.icon || '') + ' ' + s.name + '</h4><span>' + n + ' venues</span></button>';
+}
+function exploreGymsItem(i) {
+  const gyms = fitnessGyms();
+  return '<button class="explore-item reveal" data-key="__gyms" style="transition-delay:' + Math.min(i * 35, 420) + 'ms"' +
+    ' onmouseenter="previewPlace(\'gyms\',\'__gyms\')" onclick="exploreGyms()">' +
+    '<h4>\u{1F4AA} Fitness Gyms</h4><span>' + gyms.length + ' gyms</span></button>';
+}
 function renderExplore() {
-  const gyms = FEATURED_GYMS.map(n => gymsData.find(g => g.name === n)).filter(Boolean);
-  document.getElementById('gymList').innerHTML = gyms.map((g, i) => exploreItem('gym', g._id, g.name, g.area || '', i)).join('');
-  document.getElementById('sportList').innerHTML = sportsData.map((s, i) => {
-    const v = sportVenue(s._id);
-    return exploreItem('sport', s._id, (s.icon || '') + ' ' + s.name, v ? v.name : '', i);
-  }).join('');
+  document.getElementById('sportList').innerHTML = exploreGymsItem(0) + sportsData.map((s, i) => exploreSportItem(s, i + 1)).join('');
+  exploreSportId = null;
+  document.getElementById('gymListLabel').textContent = 'Venues';
+  document.getElementById('gymList').innerHTML = '<div class="explore-hint">pick a category below to browse its venues</div>';
+  const gyms = fitnessGyms();
   if (gyms[0]) previewPlace('gym', gyms[0]._id);
+}
+function exploreGyms() {
+  exploreSportId = null;
+  const gyms = fitnessGyms();
+  document.getElementById('gymListLabel').innerHTML = '\u{1F4AA} Fitness Gyms' +
+    ' <a href="javascript:void(0)" onclick="renderExplore()" style="float:right;letter-spacing:0;text-transform:none;font-size:12px">\u2190 all</a>';
+  document.getElementById('gymList').innerHTML = gyms.map((g, i) => exploreItem('gym', g._id, g.name, g.area || '', i)).join('') ||
+    '<div><strong>no gyms yet</strong></div>';
+  if (gyms[0]) previewPlace('gym', gyms[0]._id);
+}
+function exploreSport(sportId) {
+  exploreSportId = String(sportId);
+  const s = sportsData.find(x => String(x._id) === exploreSportId);
+  const venues = venuesOfSport(exploreSportId);
+  document.getElementById('gymListLabel').innerHTML = ((s ? (s.icon || '') + ' ' + s.name : '') + ' venues') +
+    ' <a href="javascript:void(0)" onclick="renderExplore()" style="float:right;letter-spacing:0;text-transform:none;font-size:12px">\u2190 all</a>';
+  document.getElementById('gymList').innerHTML = venues.map((g, i) => exploreItem('gym', g._id, g.name, g.area || '', i)).join('') ||
+    '<div><strong>no venues yet</strong></div>';
+  if (venues[0]) previewPlace('gym', venues[0]._id);
 }
 function programRows(ps) {
   return ps.map(p => '<div class="ex-prow"><strong>' + p.name + '</strong><span>' + (p.day || '') + ' · ' + (p.startTime || '') + '–' + (p.endTime || '') + '</span></div>').join('');
@@ -1738,27 +1777,44 @@ function programRows(ps) {
 function previewPlace(kind, id) {
   currentExplore = { kind, id };
   document.querySelectorAll('.explore-item').forEach(el => el.classList.toggle('active', el.dataset.key === String(id)));
-  let name = '', sub = '', lat = null, lng = null, detail = '', phone = '', email = '';
+  let name = '', sub = '', lat = null, lng = null, detail = '', phone = '', email = '', areaName = '';
   if (kind === 'gym') {
     const g = gymById(id); if (!g) return;
-    name = g.name; sub = [g.area, g.address].filter(Boolean).join(' · ');
+    name = g.name; sub = [g.area, g.address].filter(Boolean).join(' · '); areaName = g.area || '';
     lat = g.lat; lng = g.lng; phone = g.phone || ''; email = g.email || '';
     const ps = programsData.filter(p => { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return String(gid) === String(id); });
     detail = programRows(ps) || '<p style="opacity:.6;font-size:13px">no programs listed yet</p>';
+  } else if (kind === 'gyms') {
+    const gs = fitnessGyms();
+    name = '💪 Fitness Gyms'; sub = gs.length + ' gyms pinned'; areaName = '';
+    const gids = gs.map(g => String(g._id));
+    detail = programRows(programsData.filter(p => { const gid = (p.gymId && p.gymId._id) ? p.gymId._id : p.gymId; return gids.includes(String(gid)); }));
   } else {
     const s = sportsData.find(x => String(x._id) === String(id)); if (!s) return;
+    const sVenues = venuesOfSport(String(id));
     const v = sportVenue(id);
-    name = (s.icon || '') + ' ' + s.name; sub = v ? ('Flagship venue · ' + v.name) : '';
+    name = (s.icon || '') + ' ' + s.name; sub = sVenues.length + ' venues pinned'; areaName = '';
     if (v) { lat = v.lat; lng = v.lng; }
     detail = programRows(programsData.filter(p => sportIdOf(p) === String(id)));
   }
   document.getElementById('exName').textContent = name;
   document.getElementById('exSub').textContent = sub;
+  document.getElementById('exArea').textContent = areaName;
+  document.getElementById('exArea').style.display = areaName ? '' : 'none';
   const contact = [phone, email].filter(Boolean).join(' · ');
   document.getElementById('exDetail').innerHTML = (contact ? '<p class="ex-contact">' + contact + '</p>' : '') + detail;
   const q = (lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad');
   const customEmbed = (kind === 'gym' && gymById(id).mapEmbedUrl) ? gymById(id).mapEmbedUrl : '';
-  document.getElementById('exMap').src = customEmbed || ('https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed');
+  let mapSrc;
+  if (kind === 'sport' || kind === 'gyms') {
+    const list = kind === 'gyms' ? fitnessGyms() : venuesOfSport(String(id));
+    const pins = list.filter(g => g.lat && g.lng)
+      .map(g => g.lat + ',' + g.lng + ',' + encodeURIComponent(g.name || 'venue')).join('|');
+    mapSrc = pins ? 'venues-map.html?pins=' + pins : 'https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed';
+  } else {
+    mapSrc = customEmbed || ('https://maps.google.com/maps?q=' + q + '&z=17&t=k&output=embed');
+  }
+  document.getElementById('exMap').src = mapSrc;
   document.getElementById('exDir').href = 'https://www.google.com/maps/dir/?api=1&destination=' + ((lat && lng) ? (lat + ',' + lng) : encodeURIComponent(name + ' Hyderabad'));
 }
 
