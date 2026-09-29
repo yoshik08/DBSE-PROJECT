@@ -71,13 +71,22 @@ router.get('/transactions', async (req, res) => {
     Payment.find()
       .populate({
         path: 'invoiceId',
-        populate: {
-          path: 'subscriptionId',
-          populate: [
-            { path: 'userId', select: 'fullName email' },
-            { path: 'planId', select: 'name priceInr billingCycle' }
-          ]
-        }
+        populate: [
+          {
+            path: 'subscriptionId',
+            populate: [
+              { path: 'userId', select: 'fullName email' },
+              { path: 'planId', select: 'name priceInr billingCycle' }
+            ]
+          },
+          {
+            path: 'bookingId',
+            populate: [
+              { path: 'userId', select: 'fullName email' },
+              { path: 'programId', select: 'name' }
+            ]
+          }
+        ]
       })
       .sort({ paidAt: -1 }),
     Subscription.find()
@@ -90,6 +99,11 @@ router.get('/transactions', async (req, res) => {
   for (const payment of payments) {
     const invoice = payment.invoiceId || {};
     const sub = invoice.subscriptionId || {};
+    const booking = invoice.bookingId || {};
+    const user = sub.userId || booking.userId || null;
+    const plan = sub.planId
+      ? { id: sub.planId._id, name: sub.planId.name, priceInr: sub.planId.priceInr, billingCycle: sub.planId.billingCycle }
+      : (booking.programId ? { id: booking.programId._id, name: booking.programId.name } : null);
     transactions.push({
       type: 'payment',
       id: payment._id,
@@ -100,8 +114,8 @@ router.get('/transactions', async (req, res) => {
       date: payment.paidAt,
       invoiceId: invoice._id,
       subscriptionId: sub._id,
-      user: sub.userId ? { id: sub.userId._id, fullName: sub.userId.fullName, email: sub.userId.email } : null,
-      plan: sub.planId ? { id: sub.planId._id, name: sub.planId.name, priceInr: sub.planId.priceInr, billingCycle: sub.planId.billingCycle } : null
+      user: user ? { id: user._id, fullName: user.fullName, email: user.email } : null,
+      plan
     });
   }
 

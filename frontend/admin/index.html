@@ -567,12 +567,18 @@ async function refreshAdmin() {
 function renderAdminTransactions(txns) {
   const el = document.getElementById('adminTxnTable');
   if (!el) return;
-  const rows = (txns || []).slice(0, 50).map(t =>
-    '<div class="table-row cols8"><span>' + fmtDate(t.date) + '</span><span>#PAY-' + t.payment_id + '</span>' +
-    '<span>' + t.athlete + '<br><small style="color:var(--faint)">' + t.email + '</small></span>' +
-    '<span>#' + t.invoice_id + '</span><span>' + t.plan + '</span><span>' + inr(t.amount_in) + '</span>' +
-    '<span>' + t.method + (t.txn_ref && t.txn_ref !== '-' ? '<br><small style="color:var(--faint)">' + t.txn_ref + '</small>' : '') + '</span>' +
-    badge(t.status) + '</div>').join('');
+  const rows = (txns || []).slice(0, 50).map(t => {
+    const ref = '#' + (t.type === 'payment' ? 'PAY-' : 'SUB-') + String(t.id || '').slice(-6).toUpperCase();
+    const athlete = (t.user && t.user.fullName) || '-';
+    const email = (t.user && t.user.email) || '';
+    const inv = t.invoiceId ? '#' + String(t.invoiceId).slice(-6).toUpperCase() : '-';
+    const plan = (t.plan && t.plan.name) || '-';
+    return '<div class="table-row cols8"><span>' + fmtDate(t.date) + '</span><span>' + ref + '</span>' +
+      '<span>' + athlete + '<br><small style="color:var(--faint)">' + email + '</small></span>' +
+      '<span>' + inv + '</span><span>' + plan + '</span><span>' + inr(t.amountInr) + '</span>' +
+      '<span>' + (t.method || '-') + (t.txnRef ? '<br><small style="color:var(--faint)">' + t.txnRef + '</small>' : '') + '</span>' +
+      badge(t.status) + '</div>';
+  }).join('');
   el.innerHTML =
     '<div class="table-row cols8 table-header"><span>date</span><span>payment</span><span>athlete</span><span>invoice</span><span>plan</span><span>amount</span><span>method</span><span>status</span></div>' +
     (rows || '<div class="table-row"><span>no transactions yet</span></div>');
