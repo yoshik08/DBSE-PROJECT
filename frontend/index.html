@@ -369,7 +369,6 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
     <a href="#sports" onclick="closePortals()">Sports</a>
     <a href="#programs" onclick="closePortals()">Programs</a>
     <a href="#membership" onclick="closePortals()">Membership</a>
-    <a href="#billing" onclick="closePortals()">Billing</a>
     <a href="#venues" onclick="closePortals()">Venues</a>
   
     <button class="portal-btn" id="userPortalBtn" style="display:none" onclick="showPortal('user')">dashboard</button>
@@ -561,6 +560,20 @@ try{var _t=localStorage.getItem('ss-theme');if(!_t){_t=matchMedia('(prefers-colo
     <button class="primary-btn" id="authGoBtn" onclick="submitAuth()" style="width:100%;margin-top:6px">login</button>
     <div class="auth-or"><span>or</span></div>
     <div id="googleBtn" style="display:flex;justify-content:center;margin:10px 0"></div>
+  </div>
+</div>
+
+<div class="modal" id="mfaModal">
+  <div class="modal-box">
+    <div class="eyebrow" id="mfaEyebrow">TWO FACTOR</div>
+    <h2 id="mfaTitle">check your app</h2>
+    <p>enter the 6-digit code from your authenticator app</p>
+    <input id="mfaCodeInput" class="mfa-code-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')submitMfa()">
+    <p id="mfaError" class="mfa-error"></p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+      <button class="ghost-btn" onclick="cancelMfa()">cancel</button>
+      <button class="primary-btn" onclick="submitMfa()">verify</button>
+    </div>
   </div>
 </div>
 
@@ -893,7 +906,7 @@ function initGoogleBtn() {
 async function onGoogle(resp) {
   try {
     const data = await api('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken: resp.credential }) });
-    if (data.mfaRequired) { hideLogin(); showToast('this is an admin account, use the admin portal'); return; }
+    if (data.mfaRequired) { hideLogin(); return verifyMfa(data.tempToken); }
     jwt = data.token; currentUser = data.user;
     localStorage.setItem('ss_jwt', jwt);
     hideLogin();
@@ -914,7 +927,7 @@ function updateNavState(role) {
   document.getElementById('authContainer').style.display = 'none';
   document.getElementById('logoutContainer').style.display = 'flex';
   document.getElementById('gymPortalBtn').style.display = role === 'gym' ? 'inline-block' : 'none';
-  document.getElementById('userPortalBtn').style.display = role === 'athlete' ? 'inline-block' : 'none';
+  document.getElementById('userPortalBtn').style.display = (role === 'athlete' || role === 'admin') ? 'inline-block' : 'none';
 }
 function logout(silent) {
   jwt = null; currentUser = null;
@@ -1111,13 +1124,6 @@ function verifyMfa(tempToken) {
   mfaMode = 'google'; mfaTempToken = tempToken; mfaAttempts = 0;
   document.getElementById('mfaEyebrow').textContent = 'TWO FACTOR';
   document.getElementById('mfaTitle').textContent = 'check your app';
-  openMfaModal();
-}
-// admin button -> straight to the code, no google. identity = hardcoded superadmin email.
-function openAdminMfa() {
-  mfaMode = 'direct'; mfaTempToken = null; mfaAttempts = 0;
-  document.getElementById('mfaEyebrow').textContent = 'ADMIN LOGIN';
-  document.getElementById('mfaTitle').textContent = 'enter admin code';
   openMfaModal();
 }
 function closeMfaModal() {
