@@ -255,4 +255,11 @@ router.put('/gyms/:id', async (req, res) => {
   res.json(await Gym.findByIdAndUpdate(req.params.id, req.body, { new: true }));
 });
 
+// DELETE /api/admin/gyms/:id -> remove venue/gym and its programs (admin)
+router.delete('/gyms/:id', async (req, res) => {
+  await Program.deleteMany({ gymId: req.params.id });
+  await Gym.findByIdAndDelete(req.params.id);
+  res.json({ ok: true });
+});
+
 module.exports = router;

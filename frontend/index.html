@@ -1384,7 +1384,7 @@ function openSport(sportId) {
       ? '<span style="font-size:11px;color:var(--lime)">custom map</span>'
       : '<span style="font-size:11px;color:var(--faint)">auto map</span>';
     return '<div class="panel-card" style="margin-bottom:10px">' +
-      '<div class="table-title"><h3 style="font-size:15px">' + g.name + '</h3><button class="small-btn" onclick="editVenue(\'' + g._id + '\')">edit</button></div>' +
+      '<div class="table-title"><h3 style="font-size:15px">' + g.name + '</h3><span><button class="small-btn" onclick="editVenue(\'' + g._id + '\')">edit</button> <button class="small-btn" onclick="removeVenue(\'' + g._id + '\')">remove</button></span></div>' +
       '<p style="font-size:13px;color:var(--faint)">' + [g.area, g.phone].filter(Boolean).join(' \u00b7 ') + ' ' + mapTag + '</p>' +
       (progList ? '<p style="font-size:13px;margin-top:6px;line-height:1.7">' + progList + '</p>' : '') +
       '</div>';
@@ -1416,6 +1416,18 @@ async function editVenue(id) {
     gymsData = await api('/api/gyms'); loadCatalog();
     if (activeSportId) openSport(activeSportId); else renderSportsVenues();
     showToast('venue updated');
+  } catch (e) { showToast(e.message); }
+}
+async function removeVenue(id) {
+  const g = (gymsData || []).find(x => String(x._id) === String(id));
+  if (!g) return;
+  const n = (programsData || []).filter(p => progGymIdStr(p) === String(id)).length;
+  if (!confirm('remove "' + g.name + '"' + (n ? ' and its ' + n + ' program' + (n > 1 ? 's' : '') : '') + '? this cannot be undone.')) return;
+  try {
+    await api('/api/admin/gyms/' + id, { method: 'DELETE' });
+    await loadCatalog();
+    if (activeSportId) openSport(activeSportId); else renderSportsVenues();
+    showToast('venue removed');
   } catch (e) { showToast(e.message); }
 }
 async function addVenue() {
