@@ -1056,12 +1056,16 @@ function exportCSV() {
   window.location = API + '/api/admin/export/transactions?token=' + encodeURIComponent(jwt);
 }
 async function addProgram() {
-  const sports = (sportsData || []).map(s => ({ value: s._id, label: s.name }));
+  const sports = (sportsData || []).map(s => ({ value: String(s._id), label: s.name }));
   if (!sports.length) { showToast('no sports found'); return; }
+  const venues = (gymsData || []).map(g => ({ value: String(g._id), label: g.name + (g.area ? ' — ' + g.area : '') }));
+  if (!venues.length) { showToast('no venues found, add a venue first'); return; }
   const v = await openFormModal({ eyebrow: 'PROGRAMS', title: 'new program', submitText: 'add program',
     fields: [
       { key: 'name', label: 'program name', required: true, placeholder: 'e.g. Football Training' },
+      { key: 'gymId', label: 'venue / gym', type: 'select', options: venues, value: venues[0].value },
       { key: 'sportId', label: 'sport', type: 'select', options: sports, value: sports[0].value },
+      { key: 'priceInr', label: 'price (inr)', type: 'number', value: '500', inputmode: 'numeric', required: true },
       { key: 'location', label: 'location', placeholder: 'venue, area' },
       { key: 'day', label: 'day', placeholder: 'e.g. Monday' },
       { key: 'startTime', label: 'start time', placeholder: 'e.g. 18:00' },
@@ -1072,7 +1076,9 @@ async function addProgram() {
     ] });
   if (!v) return;
   const body = {
-    sportId: v.sportId, name: v.name, location: v.location, day: v.day,
+    sportId: v.sportId, gymId: v.gymId, name: v.name,
+    priceInr: parseInt(v.priceInr, 10) || 0,
+    location: v.location, day: v.day,
     startTime: v.startTime, endTime: v.endTime,
     capacity: parseInt(v.capacity, 10) || 20, coach: v.coach, level: v.level || 'beginner'
   };
